@@ -1,0 +1,35 @@
+const mongoose = require('mongoose');
+
+const playerSchema = new mongoose.Schema({
+    member: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Member',
+        required: true
+    },
+    currentTeam: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Team',
+        default: null
+    },
+    status: {
+        type: String,
+        enum: ['available', 'signed', 'cooldown'],
+        default: 'available'
+    },
+    cooldownEnds: {
+        type: Date,
+        default: null
+    },
+    joinDate: {
+        type: Date,
+        default: null
+    },
+    releaseDate: {
+        type: Date,
+        default: null
+    }
+}, {
+    timestamps: true
+});
+
+module.exports = mongoose.model('Player', playerSchema);
