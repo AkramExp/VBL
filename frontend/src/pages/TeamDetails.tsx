@@ -26,6 +26,8 @@ interface Team {
     };
     players: Array<{
         _id: string;
+        discordId: string;
+        discordName: string;
         member: {
             discordName: string;
             discordId: string;
@@ -41,6 +43,7 @@ interface Transaction {
     type: 'signing' | 'release';
     player: {
         _id: string;
+        discordName: string;
         member: {
             discordName: string;
         };
@@ -228,7 +231,7 @@ export function TeamDetails() {
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-2">
                                                     <User className="h-4 w-4 text-muted-foreground" />
-                                                    <span className="font-medium">{player.member?.discordName}</span>
+                                                    <span className="font-medium">{player?.discordName}</span>
                                                 </div>
                                                 <div className="flex gap-1">
                                                     {isCaptain && (
@@ -303,7 +306,7 @@ export function TeamDetails() {
                                                     <TableCell className="font-medium">
                                                         <div className="flex items-center gap-2">
                                                             <Building2 className="h-4 w-4 text-muted-foreground" />
-                                                            {player.member?.discordName}
+                                                            {player?.discordName}
                                                         </div>
                                                     </TableCell>
                                                     <TableCell>
@@ -380,7 +383,7 @@ export function TeamDetails() {
                                                 )}
                                                 <div className="flex-1 min-w-0">
                                                     <div className="font-medium text-sm sm:text-base">
-                                                        {transaction.player?.member?.discordName}
+                                                        {transaction.player?.discordName}
                                                     </div>
                                                     <div className="text-xs sm:text-sm text-muted-foreground mt-1">
                                                         {transaction.details}

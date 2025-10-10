@@ -26,12 +26,21 @@ exports.createPlayer = async (req, res) => {
             return res.status(400).json({ error: 'Player already exists for this member' });
         }
 
-        const newPlayer = new Player({ member: memberId });
+        const findMember = await Member.findById(memberId);
+
+        console.log(findMember)
+
+        if (!findMember) {
+            return res.status(404).json({ error: 'Member with this ID not found' });
+        }
+
+        const newPlayer = new Player({ member: memberId, discordId: findMember.discordId, discordName: findMember.discordName });
         await newPlayer.save();
         await newPlayer.populate('member', 'discordName discordId');
 
         res.json({ message: 'Player created successfully', player: newPlayer });
     } catch (error) {
+        console.log(error)
         res.status(500).json({ error: 'Failed to create player' });
     }
 };
@@ -75,7 +84,6 @@ exports.updatePlayer = async (req, res) => {
                 if (!findTeam) {
                     return res.status(404).json({ error: 'Team not found' });
                 }
-                console.log(player._id)
                 const newPlayers = findTeam.players.filter(item => String(item) !== String(player._id));
                 await Team.findByIdAndUpdate(findTeam._id, { players: newPlayers });
             }

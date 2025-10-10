@@ -1,6 +1,16 @@
 const mongoose = require('mongoose');
 
 const playerSchema = new mongoose.Schema({
+    discordName: {
+        type: String,
+        required: true,
+        unique: true
+    },
+    discordId: {
+        type: String,
+        required: true,
+        unique: true
+    },
     member: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Member',

@@ -46,7 +46,14 @@ export function Transactions() {
     };
 
     if (isLoading) {
-        return <div>Loading...</div>;
+        return <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-volleyball-court/10">
+            <div className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span className="text-2xl text-white font-bold">🏐</span>
+                </div>
+                <p className="text-muted-foreground">Loading transactions...</p>
+            </div>
+        </div>
     }
 
     return (
@@ -77,7 +84,7 @@ export function Transactions() {
                                         )}
                                         <div>
                                             <div className="font-medium">
-                                                {transaction?.player?.member?.discordName}
+                                                {transaction?.player?.discordName}
                                             </div>
                                             <div className="text-sm text-muted-foreground">
                                                 {transaction.details}
@@ -87,7 +94,7 @@ export function Transactions() {
                                             </div>
                                         </div>
                                     </div>
-                                    <Badge variant={transaction.type === 'signing' ? 'default' : 'destructive'}>
+                                    <Badge variant={transaction.type === 'signing' ? 'default' : 'destructive'} className="hidden sm:block">
                                         {transaction.type === 'signing' ? 'SIGNING' : 'RELEASE'}
                                     </Badge>
                                 </div>

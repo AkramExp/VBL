@@ -20,6 +20,8 @@ interface Member {
 
 interface Player {
   _id: string;
+  discordId: string;
+  discordName: string;
   member: Member;
   status: 'available' | 'signed' | 'cooldown';
   cooldownEnds?: string;
@@ -291,15 +293,15 @@ export function TeamManager() {
     }
 
     try {
-      // const promiseArr = newTeam.selectedPlayers.map(player => axios.post("https://testing-bot-rt1b.onrender.com/assign-role", { action: "add", discordId: player.discordId }));
-      // await Promise.all(promiseArr);
+      const promiseArr = newTeam.selectedPlayers.map(player => axios.post("https://testing-bot-rt1b.onrender.com/assign-player-role", { action: "add", discordId: player.discordId }));
+      await Promise.all(promiseArr);
 
-      // const captainDiscordId = newTeam.selectedPlayers.find(player => player.playerId === newTeam.captainId).discordId;
-      // const viceCaptainDiscordId = newTeam.selectedPlayers.find(player => player.playerId === newTeam.viceCaptainId).discordId;
+      const captainDiscordId = newTeam.selectedPlayers.find(player => player.playerId === newTeam.captainId).discordId;
+      const viceCaptainDiscordId = newTeam.selectedPlayers.find(player => player.playerId === newTeam.viceCaptainId).discordId;
 
-      // axios.post("https://testing-bot-rt1b.onrender.com/assign-captain-role", { action: "add", discordId: captainDiscordId });
+      axios.post("https://testing-bot-rt1b.onrender.com/assign-captain-role", { action: "add", discordId: captainDiscordId });
 
-      // axios.post("https://testing-bot-rt1b.onrender.com/assign-vice-captain-role", { action: "add", discordId: viceCaptainDiscordId });
+      axios.post("https://testing-bot-rt1b.onrender.com/assign-vice-captain-role", { action: "add", discordId: viceCaptainDiscordId });
 
 
       const discordIds = newTeam.selectedPlayers.map(sp => sp.discordId);
@@ -361,8 +363,8 @@ export function TeamManager() {
         ? prev.selectedPlayers.filter(sp => sp.playerId !== playerId)
         : [...prev.selectedPlayers, {
           playerId,
-          discordId: players.find(p => p._id === playerId)?.member?.discordId || "unknown",
-          discordName: players.find(p => p._id === playerId)?.member?.discordName || "Unknown Player"
+          discordId: players.find(p => p._id === playerId)?.discordId || "unknown",
+          discordName: players.find(p => p._id === playerId)?.discordName || "Unknown Player"
         }];
 
       return { ...prev, selectedPlayers };
@@ -461,29 +463,29 @@ export function TeamManager() {
         return;
       }
 
-      // if (previousCaptain && previousCaptain.member?.discordId) {
-      //   await axios.post("https://testing-bot-rt1b.onrender.com/assign-captain-role", {
-      //     action: "remove",
-      //     discordId: previousCaptain.member.discordId
-      //   });
-      // }
+      if (previousCaptain && previousCaptain.member?.discordId) {
+        await axios.post("https://testing-bot-rt1b.onrender.com/assign-captain-role", {
+          action: "remove",
+          discordId: previousCaptain.member.discordId
+        });
+      }
 
-      // if (previousViceCaptain && previousViceCaptain.member?.discordId) {
-      //   await axios.post("https://testing-bot-rt1b.onrender.com/assign-vice-captain-role", {
-      //     action: "remove",
-      //     discordId: previousViceCaptain.member.discordId
-      //   });
-      // }
+      if (previousViceCaptain && previousViceCaptain.member?.discordId) {
+        await axios.post("https://testing-bot-rt1b.onrender.com/assign-vice-captain-role", {
+          action: "remove",
+          discordId: previousViceCaptain.member.discordId
+        });
+      }
 
-      // await axios.post("https://testing-bot-rt1b.onrender.com/assign-captain-role", {
-      //   action: "add",
-      //   discordId: newCaptainPlayer.member?.discordId
-      // });
+      await axios.post("https://testing-bot-rt1b.onrender.com/assign-captain-role", {
+        action: "add",
+        discordId: newCaptainPlayer.member?.discordId
+      });
 
-      // await axios.post("https://testing-bot-rt1b.onrender.com/assign-vice-captain-role", {
-      //   action: "add",
-      //   discordId: newViceCaptainPlayer.member?.discordId
-      // });
+      await axios.post("https://testing-bot-rt1b.onrender.com/assign-vice-captain-role", {
+        action: "add",
+        discordId: newViceCaptainPlayer.member?.discordId
+      });
 
       await axios.put(`${BASE_URL}/teams/${teamId}/leadership`, {
         captainId: editingCaptain,
@@ -586,7 +588,7 @@ export function TeamManager() {
   };
 
   const getPlayerDisplayName = (player: Player) => {
-    return player.name || player.member?.discordName || "Unknown Player";
+    return player.name || player?.discordName || "Unknown Player";
   };
 
   const getRemainingCooldown = (releaseDate: string) => {
@@ -606,7 +608,6 @@ export function TeamManager() {
     return `${hours}h remaining`;
   };
 
-  // Helper function to get team size validation color
   const getTeamSizeColor = () => {
     const count = newTeam.selectedPlayers.length;
     if (count < MIN_PLAYERS) return "text-red-500";
@@ -615,7 +616,6 @@ export function TeamManager() {
     return "text-green-500";
   };
 
-  // Helper function to get team size validation message
   const getTeamSizeMessage = () => {
     const count = newTeam.selectedPlayers.length;
     if (count < MIN_PLAYERS) {
@@ -648,13 +648,13 @@ export function TeamManager() {
       {/* Create Team Form */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-md sm:text-xl">
             <Plus className="h-5 w-5" />
             Create New Team
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleCreateTeam} className="space-y-4">
+          <form onSubmit={handleCreateTeam} className="space-y-4 text-sm sm:text-md">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Team Name</Label>
@@ -683,7 +683,7 @@ export function TeamManager() {
 
             {/* Player Selection */}
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-4 sm:flex-row items-center justify-between">
                 <Label>Select Players ({MIN_PLAYERS}-{MAX_PLAYERS} players required)</Label>
                 <Button
                   type="button"
@@ -782,7 +782,7 @@ export function TeamManager() {
                             </span>
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            Discord: {player.member?.discordId}
+                            Discord: {player?.discordId}
                             {isPlayerInCooldown(player) && " • In Cooldown"}
                           </div>
                         </SelectItem>
@@ -1154,8 +1154,8 @@ export function TeamManager() {
 
                       {/* Players Column - Show usernames */}
                       <TableCell>
-                        <Badge variant="secondary" className="text-xs">
-                          {team.players.length} Players
+                        <Badge variant="secondary" className="text-xs flex items-center gap-2">
+                          {team.players.length} <span>Players</span>
                         </Badge>
                       </TableCell>
 

@@ -62,7 +62,7 @@ export function TransactionLog() {
     const filteredTransactions = transactions.filter(transaction => {
         // Search filter (player name or details)
         const matchesSearch =
-            transaction.player?.member?.discordName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            transaction.player?.discordName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             transaction.details?.toLowerCase().includes(searchTerm.toLowerCase());
 
         // Team filter
@@ -95,7 +95,7 @@ export function TransactionLog() {
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-md sm:text-xl">
                     <FileText className="h-5 w-5" />
                     Transaction Log ({transactions.length})
                 </CardTitle>
@@ -110,7 +110,7 @@ export function TransactionLog() {
                             placeholder="Search by player name or transaction details..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-10"
+                            className="pl-10 text-sm sm:text-md"
                         />
                         {searchTerm && (
                             <button
@@ -201,7 +201,7 @@ export function TransactionLog() {
                 {/* Transactions List with Limited Height */}
                 <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
                     {sortedTransactions.map(transaction => (
-                        <div key={transaction._id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                        <div key={transaction._id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors w-full">
                             <div className="flex items-center gap-4 flex-1">
                                 {transaction.type === 'signing' ? (
                                     <ArrowUpRight className="h-6 w-6 text-green-600 flex-shrink-0" />
@@ -209,10 +209,10 @@ export function TransactionLog() {
                                     <ArrowDownLeft className="h-6 w-6 text-red-600 flex-shrink-0" />
                                 )}
                                 <div className="flex-1 min-w-0">
-                                    <div className="font-medium truncate">
-                                        {transaction.player?.member?.discordName || "Unknown Player"}
+                                    <div className="font-medium truncate text-sm sm:text-md">
+                                        {transaction.player?.discordName || "Unknown Player"}
                                     </div>
-                                    <div className="text-sm text-muted-foreground truncate">
+                                    <div className="text-xs sm:text-sm text-muted-foreground truncate">
                                         {transaction.details}
                                     </div>
                                     <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
@@ -228,7 +228,7 @@ export function TransactionLog() {
                             </div>
                             <Badge
                                 variant={transaction.type === 'signing' ? 'default' : 'destructive'}
-                                className="flex-shrink-0 ml-2"
+                                className="flex-shrink-0 ml-2 hidden sm:block"
                             >
                                 {transaction.type === 'signing' ? 'SIGNING' : 'RELEASE'}
                             </Badge>

@@ -12,6 +12,8 @@ import { Header } from "@/components/Header";
 
 interface Player {
     _id: string;
+    discordId: string;
+    discordName: string;
     member: {
         _id: string;
         discordName: string;
@@ -190,8 +192,8 @@ export function CooldownsPage() {
     const filteredPlayers = cooldownPlayers.filter(player => {
         // Search term filter
         const matchesSearch =
-            player.member?.discordName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            player.member?.discordId?.toLowerCase().includes(searchTerm.toLowerCase());
+            player?.discordName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            player?.discordId?.toLowerCase().includes(searchTerm.toLowerCase());
 
         // Team filter
         const matchesTeam = teamFilter === "all" || player.currentTeam === teamFilter;
@@ -208,7 +210,7 @@ export function CooldownsPage() {
             case "time-remaining":
                 return new Date(cooldownEndsA).getTime() - new Date(cooldownEndsB).getTime();
             case "player-name":
-                return a.member.discordName.localeCompare(b.member.discordName);
+                return a.discordName.localeCompare(b.discordName);
             case "team-name":
                 const teamA = a.currentTeam ? getTeamName(a.currentTeam) : "No Team";
                 const teamB = b.currentTeam ? getTeamName(b.currentTeam) : "No Team";
@@ -226,16 +228,12 @@ export function CooldownsPage() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-volleyball-court/10 py-8">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Cooldowns</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-center py-8">Loading cooldowns...</div>
-                        </CardContent>
-                    </Card>
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-volleyball-court/10">
+                <div className="text-center">
+                    <div className="w-16 h-16 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span className="text-2xl text-white font-bold">🏐</span>
+                    </div>
+                    <p className="text-muted-foreground">Loading cooldowns...</p>
                 </div>
             </div>
         );
@@ -250,7 +248,7 @@ export function CooldownsPage() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <Card className="mt-6">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
+                        <CardTitle className="flex items-center gap-2 text-md md:text-xl">
                             <Clock className="h-5 w-5" />
                             Active Cooldowns ({cooldownPlayers.length})
                         </CardTitle>
@@ -265,7 +263,7 @@ export function CooldownsPage() {
                                     placeholder="Search players by name or Discord ID..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="pl-10"
+                                    className="pl-10 text-sm md:text-md"
                                 />
                                 {searchTerm && (
                                     <button
@@ -381,10 +379,10 @@ export function CooldownsPage() {
                                                             <User className="h-4 w-4 text-muted-foreground" />
                                                             <div>
                                                                 <div className="font-medium">
-                                                                    {player.member?.discordName}
+                                                                    {player?.discordName}
                                                                 </div>
                                                                 <div className="text-sm text-muted-foreground">
-                                                                    {player.member?.discordId}
+                                                                    {player?.discordId}
                                                                 </div>
                                                             </div>
                                                         </div>

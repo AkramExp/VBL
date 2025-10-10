@@ -12,6 +12,8 @@ import { BASE_URL } from "@/config";
 
 interface Player {
     _id: string;
+    discordName: string;
+    discordId: string;
     member: {
         _id: string;
         discordName: string;
@@ -234,6 +236,8 @@ export function PlayerManager() {
                     applyCooldown: false
                 });
 
+                await axios.post("https://testing-bot-rt1b.onrender.com/assign-player-role", { action: "remove", discordId: player.discordId });
+
                 toast({
                     title: "Success",
                     description: "Player removed from team without cooldown"
@@ -245,6 +249,8 @@ export function PlayerManager() {
                     teamId: teamIdToSend,
                     applyCooldown: false
                 });
+
+                await axios.post("https://testing-bot-rt1b.onrender.com/assign-player-role", { action: "add", discordId: player.discordId })
 
                 toast({
                     title: "Success",
@@ -306,8 +312,8 @@ export function PlayerManager() {
     // Filter players based on search term and filters
     const filteredPlayers = players.filter(player => {
         // Search term filter (discord name)
-        const matchesSearch = player.member?.discordName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            player.member?.discordId?.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = player.discordName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            player?.discordId?.toLowerCase().includes(searchTerm.toLowerCase());
 
         // Status filter
         const matchesStatus = statusFilter === "all" || player.status === statusFilter;
@@ -345,7 +351,7 @@ export function PlayerManager() {
         <div className="space-y-6">
             <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
+                    <CardTitle className="flex items-center gap-2 text-md sm:text-xl">
                         <Users className="h-5 w-5" />
                         Player Management ({players.length} players)
                     </CardTitle>
@@ -360,7 +366,7 @@ export function PlayerManager() {
                                 placeholder="Search players by Discord name or ID..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-10"
+                                className="pl-10 text-sm sm:text-md"
                             />
                             {searchTerm && (
                                 <button
@@ -475,7 +481,7 @@ export function PlayerManager() {
                                         <TableRow key={player._id} className="hover:bg-muted/50">
                                             <TableCell className="text-center">
                                                 <div className="flex items-center justify-center gap-2">
-                                                    {player.member?.discordName}
+                                                    {player?.discordName}
                                                 </div>
                                             </TableCell>
 

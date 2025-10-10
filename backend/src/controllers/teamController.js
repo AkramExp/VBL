@@ -6,8 +6,8 @@ exports.createTeam = async (req, res) => {
     try {
         const { name, password, playerIds, captainId, viceCaptainId } = req.body;
 
-        if (playerIds.length < 5) {
-            return res.status(400).json({ error: 'Team must have at least 5 players' });
+        if (playerIds.length < 6) {
+            return res.status(400).json({ error: 'Team must have at least 6 players' });
         }
 
         if (!playerIds.includes(captainId) || !playerIds.includes(viceCaptainId)) {

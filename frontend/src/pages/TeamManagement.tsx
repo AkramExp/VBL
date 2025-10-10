@@ -30,6 +30,8 @@ interface Team {
     };
     players: Array<{
         _id: string;
+        discordName: string;
+        discordId: string;
         member: {
             discordName: string;
         };
@@ -40,6 +42,8 @@ interface Team {
 
 interface Player {
     _id: string;
+    discordName: string;
+    discordId: string;
     member: {
         _id: string;
         discordName: string;
@@ -232,10 +236,10 @@ export function TeamManagement() {
                     password: team.password
                 });
 
-                // await axios.post("https://testing-bot-rt1b.onrender.com/assign-role", { 
-                //     action: "add", 
-                //     discordId: playerData.discordId 
-                // });
+                await axios.post("https://testing-bot-rt1b.onrender.com/assign-player-role", {
+                    action: "add",
+                    discordId: playerData.discordId
+                });
             }
 
             toast({
@@ -289,11 +293,11 @@ export function TeamManagement() {
                 discordId = selectedPlayerData.discordId;
             } else {
                 // Fallback to availablePlayers
-                discordId = availablePlayers.find(player => player._id === selectedPlayer)?.member.discordId || "";
+                discordId = availablePlayers.find(player => player._id === selectedPlayer)?.discordId || "";
             }
         } else {
             // Adding from availablePlayers dropdown
-            discordId = availablePlayers.find(player => player._id === selectedPlayer)?.member.discordId || "";
+            discordId = availablePlayers.find(player => player._id === selectedPlayer)?.discordId || "";
         }
 
         try {
@@ -302,7 +306,7 @@ export function TeamManagement() {
                 password: team.password
             });
 
-            // await axios.post("https://testing-bot-rt1b.onrender.com/assign-role", { action: "add", discordId })
+            await axios.post("https://testing-bot-rt1b.onrender.com/assign-player-role", { action: "add", discordId })
 
             toast({
                 title: "Success",
@@ -423,7 +427,7 @@ export function TeamManagement() {
                 data: { password: team.password }
             });
 
-            // await axios.post("https://testing-bot-rt1b.onrender.com/assign-role", { action: "remove", discordId })
+            await axios.post("https://testing-bot-rt1b.onrender.com/assign-player-role", { action: "remove", discordId })
             toast({
                 title: "Success",
                 description: "Player released from team"
@@ -507,7 +511,14 @@ export function TeamManagement() {
     };
 
     if (isLoading) {
-        return <div>Loading...</div>;
+        return <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-volleyball-court/10">
+            <div className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span className="text-2xl text-white font-bold">🏐</span>
+                </div>
+                <p className="text-muted-foreground">Loading team details...</p>
+            </div>
+        </div>
     }
 
     if (!team) {
@@ -598,7 +609,7 @@ export function TeamManagement() {
                     <div className="lg:col-span-2">
                         <Card>
                             <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
+                                <CardTitle className="flex items-center gap-2 text-md sm:text-xl">
                                     <Users className="h-5 w-5" />
                                     Current Roster ({team.players.length}/{MAX_PLAYERS} players)
                                     {team.players.length >= MAX_PLAYERS && (
@@ -632,20 +643,20 @@ export function TeamManagement() {
                                                         <TableCell className="font-medium">
                                                             <div className="flex items-center gap-2">
                                                                 <Building2 className="h-4 w-4 text-muted-foreground" />
-                                                                {player.member?.discordName}
+                                                                {player?.discordName}
                                                             </div>
                                                         </TableCell>
                                                         <TableCell>
                                                             {isCaptain && (
                                                                 <Badge className="bg-yellow-500 text-white">
-                                                                    <Crown className="h-3 w-3 mr-1" />
-                                                                    Captain
+                                                                    <Crown className="h-3 w-3 sm:mr-1" />
+                                                                    <span className="hidden sm:block">Captain</span>
                                                                 </Badge>
                                                             )}
                                                             {isViceCaptain && (
                                                                 <Badge className="bg-blue-500 text-white">
-                                                                    <Shield className="h-3 w-3 mr-1" />
-                                                                    Vice Captain
+                                                                    <Shield className="h-3 w-3 sm:mr-1" />
+                                                                    <span className="hidden sm:block">Vice Captain</span>
                                                                 </Badge>
                                                             )}
                                                             {!isCaptain && !isViceCaptain && (
@@ -679,7 +690,7 @@ export function TeamManagement() {
                                                                     // @ts-ignore
                                                                     onClick={() => releasePlayer(player._id,
                                                                         // @ts-ignore
-                                                                        player.member.discordId)}
+                                                                        player.discordId)}
                                                                 >
                                                                     Release
                                                                 </Button>
@@ -725,7 +736,7 @@ export function TeamManagement() {
                                             .filter(player => !newTeamPlayers.some(sp => sp.playerId === player._id))
                                             .map(player => (
                                                 <option key={player._id} value={player._id}>
-                                                    {player.member?.discordName}
+                                                    {player?.discordName}
                                                     {player.status === 'cooldown' && ' (Cooldown)'}
                                                 </option>
                                             ))}
@@ -827,18 +838,6 @@ export function TeamManagement() {
                                             <p className="text-sm text-red-700 mt-1">
                                                 Cannot add more than {MAX_PLAYERS} players to a team
                                             </p>
-                                        </div>
-                                    )}
-
-                                    {/* Remaining Slots Info */}
-                                    {team.players.length < MAX_PLAYERS && (
-                                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                            <div className="flex items-center gap-2">
-                                                <Info className="h-4 w-4 text-blue-500" />
-                                                <span className="font-medium text-blue-800">
-                                                    {MAX_PLAYERS - team.players.length} slot(s) remaining
-                                                </span>
-                                            </div>
                                         </div>
                                     )}
 
