@@ -93,7 +93,7 @@ export function TeamManager() {
       setTeams(teamsRes.data);
       setPlayers(playersRes.data);
     } catch (error) {
-      console.error("Error fetching data:", error);
+      console.log("Error fetching data:", error);
       toast({
         title: "Error",
         description: "Failed to fetch data",
@@ -109,7 +109,7 @@ export function TeamManager() {
       const response = await axios.get(`${BASE_URL}/members`);
       setMembers(response.data);
     } catch (error) {
-      console.error("Error fetching members:", error);
+      console.log("Error fetching members:", error);
     }
   };
 

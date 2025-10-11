@@ -55,7 +55,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
             setFixtures(fixturesRes.data);
             setStages(stagesRes.data);
         } catch (error) {
-            console.error("Error fetching data:", error);
+            console.log("Error fetching data:", error);
         } finally {
             setIsLoading(false);
         }
@@ -68,7 +68,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
             const teamNames = response.data.map((team: any) => team.name);
             setTeams(teamNames);
         } catch (error) {
-            console.error("Error fetching teams:", error);
+            console.log("Error fetching teams:", error);
         }
     };
 
@@ -77,7 +77,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
             const response = await axios.get(`${BASE_URL}/fixtures`);
             setFixtures(response.data);
         } catch (error) {
-            console.error("Error fetching fixtures:", error);
+            console.log("Error fetching fixtures:", error);
         }
     };
 
@@ -86,7 +86,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
             const response = await axios.get(`${BASE_URL}/stages`);
             setStages(response.data);
         } catch (error) {
-            console.error("Error fetching stages:", error);
+            console.log("Error fetching stages:", error);
         }
     };
 

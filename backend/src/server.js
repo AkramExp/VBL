@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 3000;
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI)
     .then(() => console.log('Connected to MongoDB'))
-    .catch(error => console.error('MongoDB connection error:', error));
+    .catch(error => console.log('MongoDB connection error:', error));
 
 // Middleware
 app.use(cors());

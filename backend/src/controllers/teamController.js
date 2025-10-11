@@ -241,7 +241,7 @@ exports.teamLeadership = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Error updating team leadership:', error);
+        console.log('Error updating team leadership:', error);
         res.status(500).json({ error: 'Failed to update team leadership' });
     }
 }
@@ -280,7 +280,7 @@ exports.updateTeamPassword = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error updating team password:', error);
+        console.log('Error updating team password:', error);
         res.status(500).json({ error: 'Failed to update team password' });
     }
 };
@@ -304,7 +304,7 @@ exports.loginTeam = async (req, res) => {
         res.json({ message: 'Login successful', success: true });
 
     } catch (error) {
-        console.error('Error logging in team:', error);
+        console.log('Error logging in team:', error);
         res.status(500).json({ error: 'Failed to log in team', success: false });
     }
 }

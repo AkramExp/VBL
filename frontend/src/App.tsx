@@ -12,6 +12,7 @@ import Transactions from "./pages/Transactions";
 import TeamManagement from "./pages/TeamManagement";
 import TeamDetails from "./pages/TeamDetails";
 import { CooldownsPage } from "./pages/CooldownsPage";
+import HomePage from "./pages/Home";
 
 const queryClient = new QueryClient();
 
@@ -28,7 +29,8 @@ const App = () => (
           <Route path="/transactions" element={<Transactions />} />
           <Route path="/team/:id/manage" element={<TeamManagement />} />
           <Route path="/team/:id/view" element={<TeamDetails />} />
-          <Route path="/" element={<Fixtures />} />
+          <Route path="/" element={<HomePage />} />
+          <Route path="/fixtures" element={<Fixtures />} />
           <Route path="/cooldowns" element={<CooldownsPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

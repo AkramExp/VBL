@@ -26,7 +26,7 @@ export function Transactions() {
                 const response = await axios.get(`${BASE_URL}/transactions`);
                 setTransactions(response.data);
             } catch (error) {
-                console.error("Error fetching transactions:", error);
+                console.log("Error fetching transactions:", error);
             } finally {
                 setIsLoading(false);
             }

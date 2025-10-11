@@ -28,8 +28,6 @@ exports.createPlayer = async (req, res) => {
 
         const findMember = await Member.findById(memberId);
 
-        console.log(findMember)
-
         if (!findMember) {
             return res.status(404).json({ error: 'Member with this ID not found' });
         }
@@ -120,7 +118,7 @@ exports.updatePlayer = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error updating player team:', error);
+        console.log('Error updating player team:', error);
         res.status(500).json({ error: 'Failed to update player team' });
     }
 }

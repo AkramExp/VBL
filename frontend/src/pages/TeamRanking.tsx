@@ -44,7 +44,7 @@ export function TeamRankings() {
             const response = await axios.get(`${BASE_URL}/fixtures`);
             setFixtures(response.data);
         } catch (error) {
-            console.error("Error fetching fixtures:", error);
+            console.log("Error fetching fixtures:", error);
         }
     };
 
@@ -53,7 +53,7 @@ export function TeamRankings() {
             const response = await axios.get(`${BASE_URL}/teams`);
             setTeams(response.data);
         } catch (error) {
-            console.error("Error fetching teams:", error);
+            console.log("Error fetching teams:", error);
         }
     };
 

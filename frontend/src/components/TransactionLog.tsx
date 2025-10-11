@@ -39,7 +39,7 @@ export function TransactionLog() {
                 setTransactions(transactionsRes.data);
                 setTeams(teamsRes.data);
             } catch (error) {
-                console.error("Error fetching data:", error);
+                console.log("Error fetching data:", error);
             } finally {
                 setIsLoading(false);
             }

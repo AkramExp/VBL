@@ -88,7 +88,7 @@ export function TeamDetails() {
                 );
                 setTransactions(teamTransactions);
             } catch (error) {
-                console.error("Error fetching data:", error);
+                console.log("Error fetching data:", error);
             } finally {
                 setIsLoading(false);
             }

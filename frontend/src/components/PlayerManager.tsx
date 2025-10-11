@@ -92,7 +92,7 @@ export function PlayerManager() {
             setTeams(teamsRes.data);
             setMembers(membersRes.data);
         } catch (error) {
-            console.error("Error fetching data:", error);
+            console.log("Error fetching data:", error);
             toast({
                 title: "Error",
                 description: "Failed to fetch data",

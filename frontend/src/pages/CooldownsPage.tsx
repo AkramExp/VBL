@@ -51,7 +51,7 @@ export function CooldownsPage() {
             setPlayers(playersRes.data);
             setTeams(teamsRes.data);
         } catch (error) {
-            console.error("Error fetching data:", error);
+            console.log("Error fetching data:", error);
         } finally {
             setIsLoading(false);
         }

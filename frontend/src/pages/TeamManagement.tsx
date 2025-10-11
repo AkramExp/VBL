@@ -98,7 +98,7 @@ export function TeamManagement() {
             const response = await axios.get(`${BASE_URL}/members`);
             setMembers(response.data);
         } catch (error) {
-            console.error("Error fetching members:", error);
+            console.log("Error fetching members:", error);
         }
     };
 
@@ -142,7 +142,7 @@ export function TeamManagement() {
                 setAllPlayers(allPlayersRes.data); // Set all players
                 setMembers(membersRes.data);
             } catch (error) {
-                console.error("Error fetching data:", error);
+                console.log("Error fetching data:", error);
                 toast({
                     title: "Error",
                     description: "Failed to load team data",
