@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { BASE_URL } from "@/config";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
-import { AlertCircle, CheckCircle, Clock, X as CloseIcon, Crown, Edit, Eye, Key, Plus, Save, Search, Shield, UserPlus, Users, X, Lock, Loader } from "lucide-react";
+import { AlertCircle, CheckCircle, Clock, X as CloseIcon, Crown, Edit, Eye, Key, Plus, Save, Search, Shield, UserPlus, Users, X, Lock, Loader, Trash } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -64,6 +64,7 @@ interface ConfirmationDialogProps {
   confirmText?: string;
   cancelText?: string;
   variant?: 'default' | 'destructive';
+  disabled?: boolean;
 }
 
 // Confirmation Dialog Component
@@ -75,7 +76,8 @@ function ConfirmationDialog({
   description,
   confirmText = "Confirm",
   cancelText = "Cancel",
-  variant = 'default'
+  variant = 'default',
+  disabled = false
 }: ConfirmationDialogProps) {
   if (!isOpen) return null;
 
@@ -90,12 +92,14 @@ function ConfirmationDialog({
           <Button
             variant="outline"
             onClick={onClose}
+            disabled={disabled}
           >
             {cancelText}
           </Button>
           <Button
             variant={variant === 'destructive' ? 'destructive' : 'default'}
             onClick={onConfirm}
+            disabled={disabled}
           >
             {confirmText}
           </Button>
@@ -121,11 +125,12 @@ export function TeamManager() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [isAction, setIsAction] = useState(false);
-  const { toast } = useToast();
-
-  // Confirmation dialog state for leadership changes
   const [showLeadershipConfirmation, setShowLeadershipConfirmation] = useState(false);
   const [pendingLeadershipTeam, setPendingLeadershipTeam] = useState<Team | null>(null);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [teamToDelete, setTeamToDelete] = useState<Team | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { toast } = useToast();
 
   const [newTeam, setNewTeam] = useState({
     name: "",
@@ -190,12 +195,6 @@ export function TeamManager() {
     return !isOnCooldown && !isInTeam && player.isActive !== false;
   });
 
-  const cooldownPlayers = players.filter(player =>
-    player.releaseDate &&
-    (Date.now() - new Date(player.releaseDate).getTime() < 3 * 24 * 60 * 60 * 1000)
-  );
-
-  // Check if a player is in cooldown
   const isPlayerInCooldown = (player: Player): boolean => {
     if (player.status === 'cooldown' && player.cooldownEnds) {
       const cooldownEnds = new Date(player.cooldownEnds);
@@ -205,7 +204,6 @@ export function TeamManager() {
     return false;
   };
 
-  // Get available players for captain/vice-captain selection (not in cooldown)
   const getAvailableLeadershipPlayers = (teamPlayers: Player[]): Player[] => {
     return teamPlayers.filter(player => !isPlayerInCooldown(player));
   };
@@ -443,24 +441,19 @@ export function TeamManager() {
   const startEditingTeam = (team: Team) => {
     setEditingTeam(team._id);
 
-    // Only set captain/vice-captain if they are not in cooldown
     const availablePlayers = getAvailableLeadershipPlayers(team.players);
 
-    // Set captain if available and not in cooldown
     if (team.captain && !isPlayerInCooldown(team.captain)) {
       setEditingCaptain(team.captain._id);
     } else if (availablePlayers.length > 0) {
-      // Auto-select first available player as captain if current captain is in cooldown
       setEditingCaptain(availablePlayers[0]._id);
     } else {
       setEditingCaptain("");
     }
 
-    // Set vice-captain if available and not in cooldown
     if (team.viceCaptain && !isPlayerInCooldown(team.viceCaptain)) {
       setEditingViceCaptain(team.viceCaptain._id);
     } else if (availablePlayers.length > 1) {
-      // Auto-select second available player as vice-captain if current vice-captain is in cooldown
       const viceCaptainCandidate = availablePlayers.find(p => p._id !== editingCaptain) || availablePlayers[0];
       setEditingViceCaptain(viceCaptainCandidate._id);
     } else {
@@ -485,7 +478,6 @@ export function TeamManager() {
       return;
     }
 
-    // Get new captain and vice-captain names for confirmation message
     const newCaptain = currentTeam.players.find(p => p._id === editingCaptain);
     const newViceCaptain = currentTeam.players.find(p => p._id === editingViceCaptain);
 
@@ -518,7 +510,6 @@ export function TeamManager() {
         return;
       }
 
-      // Check if selected captain or vice-captain are in cooldown
       const captainPlayer = currentTeam.players.find(p => p._id === editingCaptain);
       const viceCaptainPlayer = currentTeam.players.find(p => p._id === editingViceCaptain);
 
@@ -683,25 +674,69 @@ export function TeamManager() {
     }
   };
 
-  const getPlayerDisplayName = (player: Player) => {
-    return player.name || player?.discordName || "Unknown Player";
+  const handleDeleteTeam = async () => {
+    if (!teamToDelete) return;
+
+    try {
+      setIsDeleting(true);
+
+      const roleRemovalPromises = teamToDelete.players.map(player =>
+        axios.post("https://testing-bot-rt1b.onrender.com/assign-player-role", {
+          action: "remove",
+          discordId: player.member?.discordId
+        })
+      );
+
+      if (teamToDelete.captain?.member?.discordId) {
+        roleRemovalPromises.push(
+          axios.post("https://testing-bot-rt1b.onrender.com/assign-captain-role", {
+            action: "remove",
+            discordId: teamToDelete.captain.member.discordId
+          })
+        );
+      }
+
+      if (teamToDelete.viceCaptain?.member?.discordId) {
+        roleRemovalPromises.push(
+          axios.post("https://testing-bot-rt1b.onrender.com/assign-vice-captain-role", {
+            action: "remove",
+            discordId: teamToDelete.viceCaptain.member.discordId
+          })
+        );
+      }
+
+      await Promise.all(roleRemovalPromises);
+
+      await axios.delete(`${BASE_URL}/teams/${teamToDelete._id}`);
+
+      toast({
+        title: "Success",
+        description: `Team ${teamToDelete.name} deleted successfully`
+      });
+
+      fetchData();
+
+    } catch (error: any) {
+      console.error("Error deleting team:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.error || "Failed to delete team",
+        variant: "destructive"
+      });
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirmation(false);
+      setTeamToDelete(null);
+    }
   };
 
-  const getRemainingCooldown = (releaseDate: string) => {
-    const releaseTime = new Date(releaseDate).getTime();
-    const currentTime = Date.now();
-    const timeDiff = releaseTime + (3 * 24 * 60 * 60 * 1000) - currentTime;
+  const openDeleteConfirmation = (team: Team) => {
+    setTeamToDelete(team);
+    setShowDeleteConfirmation(true);
+  };
 
-    if (timeDiff <= 0) return "Available now";
-
-    const hours = Math.floor(timeDiff / (1000 * 60 * 60));
-    const days = Math.floor(hours / 24);
-    const remainingHours = hours % 24;
-
-    if (days > 0) {
-      return `${days}d ${remainingHours}h remaining`;
-    }
-    return `${hours}h remaining`;
+  const getPlayerDisplayName = (player: Player) => {
+    return player.name || player?.discordName || "Unknown Player";
   };
 
   const getTeamSizeColor = () => {
@@ -726,7 +761,6 @@ export function TeamManager() {
     return `Team size OK (${MIN_PLAYERS}-${MAX_PLAYERS} players)`;
   };
 
-  // Get new captain and vice-captain names for confirmation message
   const getLeadershipChangeDetails = () => {
     if (!pendingLeadershipTeam) return { newCaptain: "", newViceCaptain: "" };
 
@@ -1233,7 +1267,6 @@ export function TeamManager() {
         </div>
       )}
 
-      {/* Leadership Change Confirmation Dialog */}
       <ConfirmationDialog
         isOpen={showLeadershipConfirmation}
         onClose={() => {
@@ -1245,9 +1278,24 @@ export function TeamManager() {
         description={`Are you sure you want to update the leadership for ${pendingLeadershipTeam?.name}?\n\nNew Captain: ${getLeadershipChangeDetails().newCaptain}\nNew Vice Captain: ${getLeadershipChangeDetails().newViceCaptain}`}
         confirmText="Update Leadership"
         cancelText="Cancel"
+        disabled={isAction}
       />
 
-      {/* Teams List */}
+      <ConfirmationDialog
+        isOpen={showDeleteConfirmation}
+        onClose={() => {
+          setShowDeleteConfirmation(false);
+          setTeamToDelete(null);
+        }}
+        onConfirm={handleDeleteTeam}
+        title="Delete Team"
+        description={`Are you sure you want to delete the team "${teamToDelete?.name}"? This action cannot be undone and will remove all players from the team.`}
+        confirmText={isDeleting ? "Deleting..." : "Delete Team"}
+        cancelText="Cancel"
+        variant="destructive"
+        disabled={isDeleting}
+      />
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -1414,7 +1462,7 @@ export function TeamManager() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => startEditingTeam(team)}
-                                disabled={!canEditLeadership}
+                                disabled={!canEditLeadership || isDeleting}
                                 title={!canEditLeadership ? "Need at least 2 players not in cooldown to edit leadership" : "Edit leadership"}
                               >
                                 <Edit className="h-4 w-4" />
@@ -1423,8 +1471,19 @@ export function TeamManager() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => openPasswordModal(team)}
+                                disabled={isDeleting}
                               >
                                 <Lock className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openDeleteConfirmation(team)}
+                                disabled={isDeleting}
+                                title="Delete team"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash className="h-4 w-4" />
                               </Button>
                             </>
                           )}
