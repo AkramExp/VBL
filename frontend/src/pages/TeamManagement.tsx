@@ -128,7 +128,7 @@ export function TeamManagement() {
     const [allPlayers, setAllPlayers] = useState<Player[]>([]); // New state for all players
     const [members, setMembers] = useState<Member[]>([]);
     const [password, setPassword] = useState("");
-    const [isAuthenticated, setIsAuthenticated] = useState(true);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [selectedPlayer, setSelectedPlayer] = useState("");
     const [showMemberSelection, setShowMemberSelection] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
