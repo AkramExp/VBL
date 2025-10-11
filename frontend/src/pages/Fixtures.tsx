@@ -83,7 +83,7 @@ export function Fixtures() {
         getStages();
 
         // Check if mobile on mount and on resize
-        const checkIsMobile = () => setIsMobile(window.innerWidth < 768);
+        const checkIsMobile = () => setIsMobile(window.innerWidth < 1100);
         checkIsMobile();
         window.addEventListener('resize', checkIsMobile);
 
@@ -168,7 +168,7 @@ export function Fixtures() {
 
     const getResultBadge = (fixture: Fixture) => {
         if (!fixture.result) {
-            return <Badge variant="outline">Scheduled</Badge>;
+            return <Badge variant="outline">Pending</Badge>;
         }
 
         if (fixture.result.winner === "Draw") {
@@ -347,211 +347,71 @@ export function Fixtures() {
                     </div>
                 )}
 
-                <div className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1.5fr] gap-6">
+
                     {/* Upcoming Fixtures Section */}
-                    {getUpcomingFixtures().length > 0 && (
-                        <section>
-                            <Card className="shadow-card">
-                                <CardHeader className="cursor-pointer" onClick={() => toggleSection('upcoming')}>
-                                    <div className="flex items-center justify-between">
-                                        <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                                            <Trophy className="h-5 w-5" />
-                                            Upcoming Matches ({getUpcomingFixtures().length})
-                                        </CardTitle>
-                                        <Button variant="ghost" size="sm">
-                                            {expandedSections.upcoming ? (
-                                                <ChevronUp className="h-4 w-4" />
-                                            ) : (
-                                                <ChevronDown className="h-4 w-4" />
-                                            )}
-                                        </Button>
-                                    </div>
-                                </CardHeader>
-                                {expandedSections.upcoming && (
-                                    <CardContent>
-                                        {Object.entries(fixturesByStage).map(([stageName, stageFixtures]) => {
-                                            const upcomingStageFixtures = stageFixtures.filter(fixture => !fixture.result);
+                    <div>
+                        {getUpcomingFixtures().length > 0 && (
+                            <section>
+                                <Card className="shadow-card">
+                                    <CardHeader className="cursor-pointer" onClick={() => toggleSection('upcoming')}>
+                                        <div className="flex items-center justify-between">
+                                            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                                                <Trophy className="h-5 w-5" />
+                                                Upcoming Matches ({getUpcomingFixtures().length})
+                                            </CardTitle>
+                                            <Button variant="ghost" size="sm">
+                                                {expandedSections.upcoming ? (
+                                                    <ChevronUp className="h-4 w-4" />
+                                                ) : (
+                                                    <ChevronDown className="h-4 w-4" />
+                                                )}
+                                            </Button>
+                                        </div>
+                                    </CardHeader>
+                                    {expandedSections.upcoming && (
+                                        <CardContent>
+                                            {Object.entries(fixturesByStage).map(([stageName, stageFixtures]) => {
+                                                const upcomingStageFixtures = stageFixtures.filter(fixture => !fixture.result);
 
-                                            if (upcomingStageFixtures.length === 0) return null;
+                                                if (upcomingStageFixtures.length === 0) return null;
 
-                                            const isStageExpanded = expandedStages[`upcoming-${stageName}`] ?? true;
+                                                const isStageExpanded = expandedStages[`upcoming-${stageName}`] ?? true;
 
-                                            return (
-                                                <div key={stageName} className="mb-6">
-                                                    <div
-                                                        className="flex items-center justify-between mb-4 cursor-pointer"
-                                                        onClick={() => toggleStage(`upcoming-${stageName}`)}
-                                                    >
-                                                        <h3 className="text-lg font-semibold flex items-center gap-2">
-                                                            <Badge variant="secondary" className="text-sm">
-                                                                {stageName}
-                                                            </Badge>
-                                                            <span className="text-muted-foreground text-sm">
-                                                                ({upcomingStageFixtures.length} matches)
-                                                            </span>
-                                                        </h3>
-                                                        <Button variant="ghost" size="sm">
-                                                            {isStageExpanded ? (
-                                                                <ChevronUp className="h-4 w-4" />
-                                                            ) : (
-                                                                <ChevronDown className="h-4 w-4" />
-                                                            )}
-                                                        </Button>
-                                                    </div>
-
-                                                    {isStageExpanded && (
-                                                        <div className="rounded-md border overflow-x-auto">
-                                                            <Table>
-                                                                <TableHeader>
-                                                                    <TableRow className="bg-muted/50">
-                                                                        <TableHead className="text-center">Match</TableHead>
-                                                                        <TableHead className="text-center">Status</TableHead>
-                                                                    </TableRow>
-                                                                </TableHeader>
-                                                                <TableBody>
-                                                                    {upcomingStageFixtures.map((fixture) => (
-                                                                        <TableRow key={fixture._id} className="hover:bg-muted/30">
-                                                                            <TableCell className="text-center">
-                                                                                <div className="font-medium">
-                                                                                    {fixture.team1.name} <span className="text-muted-foreground">vs</span> {fixture.team2.name}
-                                                                                </div>
-                                                                            </TableCell>
-                                                                            <TableCell className="text-center">
-                                                                                {getResultBadge(fixture)}
-                                                                            </TableCell>
-                                                                        </TableRow>
-                                                                    ))}
-                                                                </TableBody>
-                                                            </Table>
+                                                return (
+                                                    <div key={stageName} className="mb-6">
+                                                        <div
+                                                            className="flex items-center justify-between mb-4 cursor-pointer"
+                                                            onClick={() => toggleStage(`upcoming-${stageName}`)}
+                                                        >
+                                                            <h3 className="text-lg font-semibold flex items-center gap-2">
+                                                                <Badge variant="secondary" className="text-sm">
+                                                                    {stageName}
+                                                                </Badge>
+                                                                <span className="text-muted-foreground text-sm">
+                                                                    ({upcomingStageFixtures.length} matches)
+                                                                </span>
+                                                            </h3>
+                                                            <Button variant="ghost" size="sm">
+                                                                {isStageExpanded ? (
+                                                                    <ChevronUp className="h-4 w-4" />
+                                                                ) : (
+                                                                    <ChevronDown className="h-4 w-4" />
+                                                                )}
+                                                            </Button>
                                                         </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
-                                    </CardContent>
-                                )}
-                            </Card>
-                        </section>
-                    )}
 
-                    {/* Completed Fixtures Section */}
-                    {getCompletedFixtures().length > 0 && (
-                        <section>
-                            <Card className="shadow-card">
-                                <CardHeader className="cursor-pointer" onClick={() => toggleSection('results')}>
-                                    <div className="flex items-center justify-between">
-                                        <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                                            <Trophy className="h-5 w-5" />
-                                            Match Results ({getCompletedFixtures().length})
-                                        </CardTitle>
-                                        <Button variant="ghost" size="sm">
-                                            {expandedSections.results ? (
-                                                <ChevronUp className="h-4 w-4" />
-                                            ) : (
-                                                <ChevronDown className="h-4 w-4" />
-                                            )}
-                                        </Button>
-                                    </div>
-                                </CardHeader>
-                                {expandedSections.results && (
-                                    <CardContent>
-                                        {Object.entries(fixturesByStage).map(([stageName, stageFixtures]) => {
-                                            const completedStageFixtures = stageFixtures.filter(fixture => fixture.result);
-
-                                            if (completedStageFixtures.length === 0) return null;
-
-                                            const isStageExpanded = expandedStages[`results-${stageName}`] ?? true;
-
-                                            return (
-                                                <div key={stageName} className="mb-6">
-                                                    <div
-                                                        className="flex items-center justify-between mb-4 cursor-pointer"
-                                                        onClick={() => { toggleStage(`results-${stageName}`) }}
-                                                    >
-                                                        <h3 className="text-lg font-semibold flex items-center gap-2">
-                                                            <Badge variant="secondary" className="text-sm">
-                                                                {stageName}
-                                                            </Badge>
-                                                            <span className="text-muted-foreground text-sm">
-                                                                ({completedStageFixtures.length} matches)
-                                                            </span>
-                                                        </h3>
-                                                        <Button variant="ghost" size="sm" >
-                                                            {isStageExpanded ? (
-                                                                <ChevronUp className="h-4 w-4" />
-                                                            ) : (
-                                                                <ChevronDown className="h-4 w-4" />
-                                                            )}
-                                                        </Button>
-                                                    </div>
-
-                                                    {isStageExpanded && (
-                                                        isMobile ? (
-                                                            // Mobile View - Card Layout
-                                                            <div className="space-y-3">
-                                                                {completedStageFixtures.map((fixture) => (
-                                                                    <div key={fixture._id} className="border rounded-lg p-4 bg-card">
-                                                                        <div className="flex justify-between items-start mb-3">
-                                                                            <div className="flex-1">
-                                                                                <div className="font-medium text-center mb-2">
-                                                                                    {fixture.team1.name} <span className="text-muted-foreground">vs</span> {fixture.team2.name}
-                                                                                </div>
-                                                                                <div className="flex justify-center mb-2">
-                                                                                    {getResultBadge(fixture)}
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <div className="grid grid-cols-3 gap-2 text-center">
-                                                                            {fixture.result?.sets.set1 && (
-                                                                                <div className="bg-muted p-2 rounded">
-                                                                                    <div className="text-xs text-muted-foreground">Set 1</div>
-                                                                                    <div className="font-mono text-sm">
-                                                                                        {fixture.result.sets.set1.team1Score}-{fixture.result.sets.set1.team2Score}
-                                                                                    </div>
-                                                                                </div>
-                                                                            )}
-                                                                            {fixture.result?.sets.set2 && (
-                                                                                <div className="bg-muted p-2 rounded">
-                                                                                    <div className="text-xs text-muted-foreground">Set 2</div>
-                                                                                    <div className="font-mono text-sm">
-                                                                                        {fixture.result.sets.set2.team1Score}-{fixture.result.sets.set2.team2Score}
-                                                                                    </div>
-                                                                                </div>
-                                                                            )}
-                                                                            {fixture.result?.sets.set3 && (
-                                                                                <div className="bg-muted p-2 rounded">
-                                                                                    <div className="text-xs text-muted-foreground">Set 3</div>
-                                                                                    <div className="font-mono text-sm">
-                                                                                        {fixture.result.sets.set3.team1Score}-{fixture.result.sets.set3.team2Score}
-                                                                                    </div>
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-
-                                                                        {fixture.result?.winner && (
-                                                                            <div className="mt-3 text-center">
-                                                                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                                                                    Winner: {fixture.result.winner}
-                                                                                </Badge>
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        ) : (
-                                                            // Desktop View - Table Layout
+                                                        {isStageExpanded && (
                                                             <div className="rounded-md border overflow-x-auto">
                                                                 <Table>
                                                                     <TableHeader>
                                                                         <TableRow className="bg-muted/50">
                                                                             <TableHead className="text-center">Match</TableHead>
-                                                                            <TableHead className="text-center">Result</TableHead>
-                                                                            <TableHead className="text-center">Score (Set Winners)</TableHead>
+                                                                            <TableHead className="text-center">Status</TableHead>
                                                                         </TableRow>
                                                                     </TableHeader>
                                                                     <TableBody>
-                                                                        {completedStageFixtures.map((fixture) => (
+                                                                        {upcomingStageFixtures.map((fixture) => (
                                                                             <TableRow key={fixture._id} className="hover:bg-muted/30">
                                                                                 <TableCell className="text-center">
                                                                                     <div className="font-medium">
@@ -561,24 +421,169 @@ export function Fixtures() {
                                                                                 <TableCell className="text-center">
                                                                                     {getResultBadge(fixture)}
                                                                                 </TableCell>
-                                                                                <TableCell className="text-center">
-                                                                                    {formatScoreDesktop(fixture)}
-                                                                                </TableCell>
                                                                             </TableRow>
                                                                         ))}
                                                                     </TableBody>
                                                                 </Table>
                                                             </div>
-                                                        )
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
-                                    </CardContent>
-                                )}
-                            </Card>
-                        </section>
-                    )}
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </CardContent>
+                                    )}
+                                </Card>
+                            </section>
+                        )}
+                    </div>
+
+                    <div>
+                        {/* Completed Fixtures Section */}
+                        {getCompletedFixtures().length > 0 && (
+                            <section>
+                                <Card className="shadow-card">
+                                    <CardHeader className="cursor-pointer" onClick={() => toggleSection('results')}>
+                                        <div className="flex items-center justify-between">
+                                            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                                                <Trophy className="h-5 w-5" />
+                                                Match Results ({getCompletedFixtures().length})
+                                            </CardTitle>
+                                            <Button variant="ghost" size="sm">
+                                                {expandedSections.results ? (
+                                                    <ChevronUp className="h-4 w-4" />
+                                                ) : (
+                                                    <ChevronDown className="h-4 w-4" />
+                                                )}
+                                            </Button>
+                                        </div>
+                                    </CardHeader>
+                                    {expandedSections.results && (
+                                        <CardContent>
+                                            {Object.entries(fixturesByStage).map(([stageName, stageFixtures]) => {
+                                                const completedStageFixtures = stageFixtures.filter(fixture => fixture.result);
+
+                                                if (completedStageFixtures.length === 0) return null;
+
+                                                const isStageExpanded = expandedStages[`results-${stageName}`] ?? true;
+
+                                                return (
+                                                    <div key={stageName} className="mb-6">
+                                                        <div
+                                                            className="flex items-center justify-between mb-4 cursor-pointer"
+                                                            onClick={() => { toggleStage(`results-${stageName}`) }}
+                                                        >
+                                                            <h3 className="text-lg font-semibold flex items-center gap-2">
+                                                                <Badge variant="secondary" className="text-sm">
+                                                                    {stageName}
+                                                                </Badge>
+                                                                <span className="text-muted-foreground text-sm">
+                                                                    ({completedStageFixtures.length} matches)
+                                                                </span>
+                                                            </h3>
+                                                            <Button variant="ghost" size="sm" >
+                                                                {isStageExpanded ? (
+                                                                    <ChevronUp className="h-4 w-4" />
+                                                                ) : (
+                                                                    <ChevronDown className="h-4 w-4" />
+                                                                )}
+                                                            </Button>
+                                                        </div>
+
+                                                        {isStageExpanded && (
+                                                            isMobile ? (
+                                                                // Mobile View - Card Layout
+                                                                <div className="space-y-3">
+                                                                    {completedStageFixtures.map((fixture) => (
+                                                                        <div key={fixture._id} className="border rounded-lg p-4 bg-card">
+                                                                            <div className="flex justify-between items-start mb-3">
+                                                                                <div className="flex-1">
+                                                                                    <div className="font-medium text-center mb-2">
+                                                                                        {fixture.team1.name} <span className="text-muted-foreground">vs</span> {fixture.team2.name}
+                                                                                    </div>
+                                                                                    <div className="flex justify-center mb-2">
+                                                                                        {getResultBadge(fixture)}
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+
+                                                                            <div className="flex items-center justify-center gap-3 w-full text-center">
+                                                                                {fixture.result?.sets.set1 && (
+                                                                                    <div className="bg-muted p-2 rounded w-full">
+                                                                                        <div className="text-xs text-muted-foreground">Set 1</div>
+                                                                                        <div className="font-mono text-sm">
+                                                                                            {fixture.result.sets.set1.team1Score}-{fixture.result.sets.set1.team2Score}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )}
+                                                                                {fixture.result?.sets.set2 && (
+                                                                                    <div className="bg-muted p-2 rounded w-full">
+                                                                                        <div className="text-xs text-muted-foreground">Set 2</div>
+                                                                                        <div className="font-mono text-sm">
+                                                                                            {fixture.result.sets.set2.team1Score}-{fixture.result.sets.set2.team2Score}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )}
+                                                                                {fixture.result?.sets.set3 && (
+                                                                                    <div className="bg-muted p-2 rounded w-full">
+                                                                                        <div className="text-xs text-muted-foreground">Set 3</div>
+                                                                                        <div className="font-mono text-sm">
+                                                                                            {fixture.result.sets.set3.team1Score}-{fixture.result.sets.set3.team2Score}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+
+                                                                            {fixture.result?.winner && (
+                                                                                <div className="mt-3 text-center">
+                                                                                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                                                                        Winner: {fixture.result.winner}
+                                                                                    </Badge>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            ) : (
+                                                                // Desktop View - Table Layout
+                                                                <div className="rounded-md border overflow-x-auto">
+                                                                    <Table>
+                                                                        <TableHeader>
+                                                                            <TableRow className="bg-muted/50">
+                                                                                <TableHead className="text-center">Match</TableHead>
+                                                                                <TableHead className="text-center">Result</TableHead>
+                                                                                <TableHead className="text-center">Score (Set Winners)</TableHead>
+                                                                            </TableRow>
+                                                                        </TableHeader>
+                                                                        <TableBody>
+                                                                            {completedStageFixtures.map((fixture) => (
+                                                                                <TableRow key={fixture._id} className="hover:bg-muted/30">
+                                                                                    <TableCell className="text-center">
+                                                                                        <div className="font-medium">
+                                                                                            {fixture.team1.name} <span className="text-muted-foreground">vs</span> {fixture.team2.name}
+                                                                                        </div>
+                                                                                    </TableCell>
+                                                                                    <TableCell className="text-center">
+                                                                                        {getResultBadge(fixture)}
+                                                                                    </TableCell>
+                                                                                    <TableCell className="text-center">
+                                                                                        {formatScoreDesktop(fixture)}
+                                                                                    </TableCell>
+                                                                                </TableRow>
+                                                                            ))}
+                                                                        </TableBody>
+                                                                    </Table>
+                                                                </div>
+                                                            )
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </CardContent>
+                                    )}
+                                </Card>
+                            </section>
+                        )}
+                    </div>
 
                     {/* Empty states */}
                     {fixtures.length === 0 ? (
