@@ -1,15 +1,15 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Users, Clock, Building2, UserX, UserCheck, Search, Filter, Edit, Save, X, Trash2, Crown, Shield, AlertCircle, UserPlus, Key, Loader } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { BASE_URL } from "@/config";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
-import { BASE_URL } from "@/config";
-import { Label } from "@/components/ui/label";
+import { Building2, Clock, ClockArrowDown, Edit, Filter, Save, Search, Trash2, UserCheck, UserPlus, Users, UserX, X } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface Member {
     _id: string;
@@ -60,8 +60,6 @@ export function PlayerManager() {
     const [editingPlayer, setEditingPlayer] = useState<string | null>(null);
     const [newTeamId, setNewTeamId] = useState<string>("no-team");
     const [isAction, setIsAction] = useState(false);
-
-    // New member creation state
     const [showMemberSelection, setShowMemberSelection] = useState(false);
     const [memberSearchTerm, setMemberSearchTerm] = useState("");
     const [isCreatingMember, setIsCreatingMember] = useState(false);
@@ -78,7 +76,6 @@ export function PlayerManager() {
                 axios.get(`${BASE_URL}/members`)
             ]);
 
-            // Enhance players with captain/vice-captain information
             const enhancedPlayers = playersRes.data.map((player: Player) => {
                 const playerTeam = teamsRes.data.find((team: Team) => team._id === player.currentTeam);
                 return {
@@ -107,11 +104,62 @@ export function PlayerManager() {
         fetchData();
     }, []);
 
-    // Filter members for the member selection modal
     const filteredMembers = members.filter(member =>
         member?.discordName?.toLowerCase().includes(memberSearchTerm.toLowerCase()) ||
         member.discordId.toLowerCase().includes(memberSearchTerm.toLowerCase())
     );
+
+    const getTimeRemaining = (cooldownEnds: string) => {
+        const cooldownEndsDate = new Date(cooldownEnds);
+        const now = new Date();
+        const timeLeft = cooldownEndsDate.getTime() - now.getTime();
+
+        if (timeLeft <= 0) {
+            return { hours: 0, minutes: 0, text: "Available Now", isExpired: true };
+        }
+
+        const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+        const days = Math.floor(hours / 24);
+        const remainingHours = hours % 24;
+
+        let text = "";
+        if (days > 0) {
+            text = `${days}d ${remainingHours}h`;
+        } else if (hours > 0) {
+            text = `${hours}h ${minutes}m`;
+        } else {
+            text = `${minutes}m`;
+        }
+
+        return { hours, minutes, days, text, isExpired: false };
+    };
+
+    const removeCooldown = async (playerId: string) => {
+        try {
+            setIsAction(true)
+            const player = players.find(p => p._id === playerId);
+            if (!player) return;
+
+            await axios.put(`${BASE_URL}/players/${playerId}/remove-cooldown`, {});
+
+            toast({
+                title: "Success",
+                description: "Player cooldown removed successfully"
+            });
+
+            await fetchData();
+
+        } catch (error: any) {
+            toast({
+                title: "Error",
+                description: error.response?.data?.error || "Failed to remove cooldown",
+                variant: "destructive"
+            });
+        } finally {
+            setIsAction(false)
+        }
+    }
 
     const membersWithoutPlayers = filteredMembers.filter(member =>
         !players.some(player => player.member?._id === member._id)
@@ -168,11 +216,6 @@ export function PlayerManager() {
         return getTeamPlayerCount(teamId) >= MAX_PLAYERS;
     };
 
-    const getTeamForPlayer = (player: Player) => {
-        if (!player.currentTeam) return null;
-        return teams.find(t => t._id === player.currentTeam);
-    };
-
     const isPlayerCaptainOrViceCaptain = (player: Player): boolean => {
         return !!(player.isCaptain || player.isViceCaptain);
     };
@@ -196,6 +239,15 @@ export function PlayerManager() {
     };
 
     const getStatusBadge = (player: Player) => {
+        const isCooldown = !getTimeRemaining(player.cooldownEnds).isExpired;
+
+        if (isCooldown) {
+            return <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+                <Clock className="h-3 w-3 mr-1" />
+                Cooldown
+            </Badge>
+        }
+
         switch (player.status) {
             case 'available':
                 return (
@@ -221,26 +273,6 @@ export function PlayerManager() {
             default:
                 return <Badge variant="outline">Unknown</Badge>;
         }
-    };
-
-    const getCooldownInfo = (player: Player) => {
-        if (player.status === 'cooldown' && player.cooldownEnds) {
-            const cooldownEnds = new Date(player.cooldownEnds);
-            const now = new Date();
-            const timeLeft = cooldownEnds.getTime() - now.getTime();
-
-            if (timeLeft > 0) {
-                const hoursLeft = Math.ceil(timeLeft / (1000 * 60 * 60));
-                const daysLeft = Math.ceil(timeLeft / (1000 * 60 * 60 * 24));
-
-                if (daysLeft > 1) {
-                    return `${daysLeft} days`;
-                } else {
-                    return `${hoursLeft} hours`;
-                }
-            }
-        }
-        return null;
     };
 
     const startEditing = (player: Player) => {
@@ -269,7 +301,6 @@ export function PlayerManager() {
             const player = players.find(p => p._id === playerId);
             if (!player) return;
 
-            // Check if player is captain or vice-captain
             if (isPlayerCaptainOrViceCaptain(player)) {
                 toast({
                     title: "Cannot Change Team",
@@ -345,7 +376,6 @@ export function PlayerManager() {
             const player = players.find(p => p._id === playerId);
             if (!player) return;
 
-            // Check if player is captain or vice-captain
             if (isPlayerCaptainOrViceCaptain(player)) {
                 toast({
                     title: "Cannot Remove from Team",
@@ -379,16 +409,12 @@ export function PlayerManager() {
         }
     };
 
-    // Filter players based on search term and filters
     const filteredPlayers = players.filter(player => {
-        // Search term filter (discord name)
         const matchesSearch = player.discordName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             player?.discordId?.toLowerCase().includes(searchTerm.toLowerCase());
 
-        // Status filter
         const matchesStatus = statusFilter === "all" || player.status === statusFilter;
 
-        // Team filter
         let matchesTeam = true;
         if (teamFilter === "no-team") {
             matchesTeam = !player.currentTeam;
@@ -419,7 +445,6 @@ export function PlayerManager() {
 
     return (
         <div className="space-y-6">
-
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle className="flex items-center gap-2 text-md sm:text-xl">
@@ -438,9 +463,7 @@ export function PlayerManager() {
                     </Button>
                 </CardHeader>
                 <CardContent>
-                    {/* Search and Filter Section */}
                     <div className="space-y-4 mb-6">
-                        {/* Search Bar */}
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                             <Input
@@ -540,7 +563,6 @@ export function PlayerManager() {
                         </div>
                     </div>
 
-                    {/* Players Table */}
                     <div className="rounded-md border overflow-x-auto max-h-[600px] overflow-y-auto">
                         <Table>
                             <TableHeader>
@@ -554,7 +576,7 @@ export function PlayerManager() {
                             </TableHeader>
                             <TableBody>
                                 {sortedPlayers.map(player => {
-                                    const cooldownInfo = getCooldownInfo(player);
+                                    const isCooldown = !getTimeRemaining(player.cooldownEnds).isExpired;
                                     const isEditing = editingPlayer === player._id;
                                     const isCaptainOrViceCaptain = isPlayerCaptainOrViceCaptain(player);
 
@@ -617,10 +639,10 @@ export function PlayerManager() {
                                                 )}
                                             </TableCell>
                                             <TableCell className="text-center">
-                                                {cooldownInfo ? (
+                                                {isCooldown ? (
                                                     <div className="flex items-center justify-center gap-2">
                                                         <Clock className="h-3 w-3 text-orange-500" />
-                                                        <span className="text-sm">{cooldownInfo} left</span>
+                                                        <span className="text-sm">{getTimeRemaining(player.cooldownEnds).text}</span>
                                                     </div>
                                                 ) : (
                                                     <span className="text-muted-foreground">-</span>
@@ -676,6 +698,15 @@ export function PlayerManager() {
                                                                     <Trash2 className="h-3 w-3" />
                                                                 </Button>
                                                             )}
+                                                            {isCooldown && <Button
+                                                                size="sm"
+                                                                variant="destructive"
+                                                                onClick={() => removeCooldown(player._id)}
+                                                                disabled={isAction}
+                                                                title={"Remove Cooldown"}
+                                                            >
+                                                                <ClockArrowDown className="h-3 w-3" />
+                                                            </Button>}
                                                         </>
                                                     )}
                                                 </div>

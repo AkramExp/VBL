@@ -241,7 +241,7 @@ exports.teamLeadership = async (req, res) => {
             }
         });
     } catch (error) {
-        console.log('Error updating team leadership:', error);
+        console.error('Error updating team leadership:', error);
         res.status(500).json({ error: 'Failed to update team leadership' });
     }
 }
@@ -280,7 +280,7 @@ exports.updateTeamPassword = async (req, res) => {
         });
 
     } catch (error) {
-        console.log('Error updating team password:', error);
+        console.error('Error updating team password:', error);
         res.status(500).json({ error: 'Failed to update team password' });
     }
 };
@@ -291,7 +291,6 @@ exports.loginTeam = async (req, res) => {
         const { teamId } = req.params;
 
         const findTeam = await Team.findById(teamId);
-
 
         if (!findTeam) {
             return res.status(404).json({ error: 'Team not found', success: false });
@@ -304,7 +303,7 @@ exports.loginTeam = async (req, res) => {
         res.json({ message: 'Login successful', success: true });
 
     } catch (error) {
-        console.log('Error logging in team:', error);
+        console.error('Error logging in team:', error);
         res.status(500).json({ error: 'Failed to log in team', success: false });
     }
 }

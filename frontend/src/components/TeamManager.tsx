@@ -54,6 +54,57 @@ interface SelectedPlayer {
   discordName: string;
 }
 
+// Confirmation Dialog Props
+interface ConfirmationDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title: string;
+  description: string;
+  confirmText?: string;
+  cancelText?: string;
+  variant?: 'default' | 'destructive';
+}
+
+// Confirmation Dialog Component
+function ConfirmationDialog({
+  isOpen,
+  onClose,
+  onConfirm,
+  title,
+  description,
+  confirmText = "Confirm",
+  cancelText = "Cancel",
+  variant = 'default'
+}: ConfirmationDialogProps) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-background rounded-lg p-6 w-full max-w-md">
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold">{title}</h3>
+          <p className="text-muted-foreground mt-2">{description}</p>
+        </div>
+        <div className="flex gap-3 justify-end">
+          <Button
+            variant="outline"
+            onClick={onClose}
+          >
+            {cancelText}
+          </Button>
+          <Button
+            variant={variant === 'destructive' ? 'destructive' : 'default'}
+            onClick={onConfirm}
+          >
+            {confirmText}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function TeamManager() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
@@ -71,6 +122,10 @@ export function TeamManager() {
   const [isCreating, setIsCreating] = useState(false);
   const [isAction, setIsAction] = useState(false);
   const { toast } = useToast();
+
+  // Confirmation dialog state for leadership changes
+  const [showLeadershipConfirmation, setShowLeadershipConfirmation] = useState(false);
+  const [pendingLeadershipTeam, setPendingLeadershipTeam] = useState<Team | null>(null);
 
   const [newTeam, setNewTeam] = useState({
     name: "",
@@ -419,7 +474,38 @@ export function TeamManager() {
     setEditingViceCaptain("");
   };
 
-  const saveTeamLeadership = async (teamId: string) => {
+  const handleSaveLeadershipConfirmation = (teamId: string) => {
+    const currentTeam = teams.find(team => team._id === teamId);
+    if (!currentTeam) {
+      toast({
+        title: "Error",
+        description: "Team not found",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Get new captain and vice-captain names for confirmation message
+    const newCaptain = currentTeam.players.find(p => p._id === editingCaptain);
+    const newViceCaptain = currentTeam.players.find(p => p._id === editingViceCaptain);
+
+    if (!newCaptain || !newViceCaptain) {
+      toast({
+        title: "Error",
+        description: "Selected captain or vice captain not found in team",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setPendingLeadershipTeam(currentTeam);
+    setShowLeadershipConfirmation(true);
+  };
+
+  const saveTeamLeadership = async () => {
+    if (!pendingLeadershipTeam) return;
+
+    const teamId = pendingLeadershipTeam._id;
     try {
       setIsAction(true)
       const currentTeam = teams.find(team => team._id === teamId);
@@ -525,6 +611,8 @@ export function TeamManager() {
       });
     } finally {
       setIsAction(false)
+      setShowLeadershipConfirmation(false);
+      setPendingLeadershipTeam(null);
     }
   };
 
@@ -636,6 +724,19 @@ export function TeamManager() {
       return "Maximum players reached";
     }
     return `Team size OK (${MIN_PLAYERS}-${MAX_PLAYERS} players)`;
+  };
+
+  // Get new captain and vice-captain names for confirmation message
+  const getLeadershipChangeDetails = () => {
+    if (!pendingLeadershipTeam) return { newCaptain: "", newViceCaptain: "" };
+
+    const newCaptain = pendingLeadershipTeam.players.find(p => p._id === editingCaptain);
+    const newViceCaptain = pendingLeadershipTeam.players.find(p => p._id === editingViceCaptain);
+
+    return {
+      newCaptain: newCaptain ? getPlayerDisplayName(newCaptain) : "Unknown",
+      newViceCaptain: newViceCaptain ? getPlayerDisplayName(newViceCaptain) : "Unknown"
+    };
   };
 
   if (isLoading) {
@@ -1132,6 +1233,20 @@ export function TeamManager() {
         </div>
       )}
 
+      {/* Leadership Change Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={showLeadershipConfirmation}
+        onClose={() => {
+          setShowLeadershipConfirmation(false);
+          setPendingLeadershipTeam(null);
+        }}
+        onConfirm={saveTeamLeadership}
+        title="Update Team Leadership"
+        description={`Are you sure you want to update the leadership for ${pendingLeadershipTeam?.name}?\n\nNew Captain: ${getLeadershipChangeDetails().newCaptain}\nNew Vice Captain: ${getLeadershipChangeDetails().newViceCaptain}`}
+        confirmText="Update Leadership"
+        cancelText="Cancel"
+      />
+
       {/* Teams List */}
       <Card>
         <CardHeader>
@@ -1273,7 +1388,7 @@ export function TeamManager() {
                               <Button
                                 variant="default"
                                 size="sm"
-                                onClick={() => saveTeamLeadership(team._id)}
+                                onClick={() => handleSaveLeadershipConfirmation(team._id)}
                                 disabled={!canEditLeadership || isAction}
                                 title={!canEditLeadership ? "Need at least 2 players not in cooldown" : "Save leadership changes"}
                               >

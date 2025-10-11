@@ -370,7 +370,6 @@ export function CooldownsPage() {
                                             const calculatedCooldownEnds = getCalculatedCooldownEnds(player);
                                             const timeRemaining = getTimeRemaining(calculatedCooldownEnds);
                                             const displayDate = getDisplayDate(player);
-                                            const progress = getCooldownProgress(player);
 
                                             return (
                                                 <TableRow key={player._id} className="hover:bg-muted/50">

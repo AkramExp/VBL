@@ -122,3 +122,33 @@ exports.updatePlayer = async (req, res) => {
         res.status(500).json({ error: 'Failed to update player team' });
     }
 }
+
+exports.removeCooldown = async (req, res) => {
+    try {
+        const { playerId } = req.params;
+
+        const player = await Player.findById(playerId);
+        if (!player) {
+            return res.status(404).json({ error: 'Player not found' });
+        }
+
+        player.cooldownEnds = null;
+
+        if (player.currentTeam) {
+            player.status = 'signed';
+        } else {
+            player.status = 'available';
+        }
+
+        await player.save();
+
+        res.json({
+            message: 'Player team updated successfully',
+            player: await Player.findById(playerId).populate('member')
+        });
+
+    } catch (error) {
+        console.log('Error removing cooldown:', error);
+        res.status(500).json({ error: 'Failed to remove cooldown' });
+    }
+}

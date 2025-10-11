@@ -67,6 +67,59 @@ interface SelectedPlayer {
     discordName: string;
 }
 
+interface ConfirmationDialogProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onConfirm: () => void;
+    title: string;
+    description: string;
+    confirmText?: string;
+    cancelText?: string;
+    variant?: 'default' | 'destructive';
+    isAction: boolean;
+}
+
+function ConfirmationDialog({
+    isOpen,
+    onClose,
+    onConfirm,
+    title,
+    description,
+    confirmText = "Confirm",
+    cancelText = "Cancel",
+    variant = 'default',
+    isAction
+}: ConfirmationDialogProps) {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-background rounded-lg p-6 w-full max-w-md">
+                <div className="mb-4">
+                    <h3 className="text-lg font-semibold">{title}</h3>
+                    <p className="text-muted-foreground mt-2">{description}</p>
+                </div>
+                <div className="flex gap-3 justify-end">
+                    <Button
+                        variant="outline"
+                        onClick={onClose}
+                        disabled={isAction}
+                    >
+                        {cancelText}
+                    </Button>
+                    <Button
+                        variant={variant === 'destructive' ? 'destructive' : 'default'}
+                        onClick={onConfirm}
+                        disabled={isAction}
+                    >
+                        {confirmText}
+                    </Button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export function TeamManagement() {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -75,7 +128,7 @@ export function TeamManagement() {
     const [allPlayers, setAllPlayers] = useState<Player[]>([]); // New state for all players
     const [members, setMembers] = useState<Member[]>([]);
     const [password, setPassword] = useState("");
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [isAuthenticated, setIsAuthenticated] = useState(true);
     const [selectedPlayer, setSelectedPlayer] = useState("");
     const [showMemberSelection, setShowMemberSelection] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
@@ -83,9 +136,12 @@ export function TeamManagement() {
     const [inCooldown, setInCooldown] = useState(false)
     const { toast } = useToast();
     const [isAction, setIsAction] = useState(false);
-
-
     const [newTeamPlayers, setNewTeamPlayers] = useState<SelectedPlayer[]>([]);
+
+    // Confirmation dialog states
+    const [showAddConfirmation, setShowAddConfirmation] = useState(false);
+    const [showReleaseConfirmation, setShowReleaseConfirmation] = useState(false);
+    const [playerToRelease, setPlayerToRelease] = useState<{ id: string; discordId: string; name: string } | null>(null);
 
     const MAX_PLAYERS = 12;
 
@@ -135,11 +191,11 @@ export function TeamManagement() {
                     axios.get(`${BASE_URL}/teams/${id}`),
                     axios.get(`${BASE_URL}/players/available`),
                     axios.get(`${BASE_URL}/members`),
-                    axios.get(`${BASE_URL}/players`) // Fetch ALL players
+                    axios.get(`${BASE_URL}/players`)
                 ]);
                 setTeam(teamRes.data);
                 setAvailablePlayers(playersRes.data);
-                setAllPlayers(allPlayersRes.data); // Set all players
+                setAllPlayers(allPlayersRes.data);
                 setMembers(membersRes.data);
             } catch (error) {
                 console.log("Error fetching data:", error);
@@ -193,7 +249,6 @@ export function TeamManagement() {
                 description: "Player created successfully"
             });
 
-            // Refresh available players list and all players
             const [playersRes, allPlayersRes] = await Promise.all([
                 axios.get(`${BASE_URL}/players/available`),
                 axios.get(`${BASE_URL}/players`)
@@ -201,11 +256,14 @@ export function TeamManagement() {
             setAvailablePlayers(playersRes.data);
             setAllPlayers(allPlayersRes.data);
 
+            setShowMemberSelection(false)
+
             return {
                 playerId: response.data.player._id,
                 discordId: member.discordId,
                 discordName: member.discordName
             };
+
         } catch (error: any) {
             toast({
                 title: "Error",
@@ -218,62 +276,7 @@ export function TeamManagement() {
         }
     };
 
-    // NEW: Add multiple players at once
-    const addMultiplePlayers = async () => {
-        if (!team || newTeamPlayers.length === 0) return;
-
-        const totalAfterAddition = team.players.length + newTeamPlayers.length;
-        if (totalAfterAddition > MAX_PLAYERS) {
-            toast({
-                title: "Too many players",
-                description: `Adding ${newTeamPlayers.length} players would exceed the maximum of ${MAX_PLAYERS}`,
-                variant: "destructive"
-            });
-            return;
-        }
-
-        try {
-            setIsAction(true);
-            // Add all selected players to the team in one request
-            for (const playerData of newTeamPlayers) {
-                await axios.post(`${BASE_URL}/teams/${team._id}/players`, {
-                    playerId: playerData.playerId,
-                });
-
-                await axios.post("https://testing-bot-rt1b.onrender.com/assign-player-role", {
-                    action: "add",
-                    discordId: playerData.discordId
-                });
-            }
-
-            toast({
-                title: "Success",
-                description: `${newTeamPlayers.length} players added to team`
-            });
-
-            const [teamRes, playersRes, allPlayersRes] = await Promise.all([
-                axios.get(`${BASE_URL}/teams/${id}`),
-                axios.get(`${BASE_URL}/players/available`),
-                axios.get(`${BASE_URL}/players`)
-            ]);
-            setTeam(teamRes.data);
-            setAvailablePlayers(playersRes.data);
-            setAllPlayers(allPlayersRes.data);
-            setSelectedPlayer("");
-            setNewTeamPlayers([]); // Clear the member selection
-        } catch (error: any) {
-            toast({
-                title: "Error",
-                description: error.response?.data?.error || "Failed to add players",
-                variant: "destructive"
-            });
-        } finally {
-            setIsAction(false);
-        }
-    };
-
-    // Keep the original addPlayer for single player addition
-    const addPlayer = async () => {
+    const handleAddPlayerConfirmation = () => {
         if (!selectedPlayer || !team) return;
 
         // Check if team is already at maximum capacity
@@ -286,12 +289,34 @@ export function TeamManagement() {
             return;
         }
 
-        // Check if we're adding from newTeamPlayers (member selection) or from availablePlayers dropdown
+        // Get player name for confirmation message
+        let playerName = "";
+        if (newTeamPlayers.length > 0) {
+            const selectedPlayerData = newTeamPlayers.find(sp => sp.playerId === selectedPlayer);
+            playerName = selectedPlayerData?.discordName || "";
+        } else {
+            playerName = availablePlayers.find(player => player._id === selectedPlayer)?.discordName || "";
+        }
+
+        if (!playerName) {
+            toast({
+                title: "Error",
+                description: "Could not find player information",
+                variant: "destructive"
+            });
+            return;
+        }
+
+        setShowAddConfirmation(true);
+    };
+
+    const addPlayer = async () => {
+        if (!selectedPlayer || !team) return;
+
         let playerToAdd = selectedPlayer;
         let discordId = "";
 
         if (newTeamPlayers.length > 0) {
-            // Adding from member selection
             const selectedPlayerData = newTeamPlayers.find(sp => sp.playerId === selectedPlayer);
             if (selectedPlayerData) {
                 playerToAdd = selectedPlayerData.playerId;
@@ -337,60 +362,11 @@ export function TeamManagement() {
             });
         } finally {
             setIsAction(false)
+            setShowAddConfirmation(false);
         }
     };
 
-    const handleAddMemberToTeam = async (member: Member) => {
-        // Check if team is already at maximum capacity
-        if (team.players.length >= MAX_PLAYERS) {
-            toast({
-                title: "Maximum players reached",
-                description: `A team can have maximum ${MAX_PLAYERS} players`,
-                variant: "destructive"
-            });
-            return;
-        }
-
-        // Also check if we're trying to add more than the remaining slots
-        const remainingSlots = MAX_PLAYERS - team.players.length;
-        if (newTeamPlayers.length >= remainingSlots) {
-            toast({
-                title: "Maximum players reached",
-                description: `Only ${remainingSlots} slot(s) remaining`,
-                variant: "destructive"
-            });
-            return;
-        }
-
-        let playerData: SelectedPlayer | null = null;
-
-        // Check if player already exists for this member
-        const existingPlayer = availablePlayers.find(p => p.member._id === member._id);
-        if (existingPlayer) {
-            playerData = {
-                playerId: existingPlayer._id,
-                discordId: member.discordId,
-                discordName: member.discordName
-            };
-        } else {
-            // If player doesn't exist, create one
-            playerData = await createPlayerFromMember(member._id);
-            if (!playerData) return; // Failed to create player
-        }
-
-        if (!newTeamPlayers.some(sp => sp.playerId === playerData!.playerId)) {
-            setNewTeamPlayers(prev => [...prev, playerData!]);
-            // Don't auto-select, let user choose to add multiple
-        }
-
-        setSearchTerm("");
-        toast({
-            title: "Success",
-            description: "Player added to selection"
-        });
-    };
-
-    const releasePlayer = async (playerId: string, discordId: string) => {
+    const handleReleasePlayerConfirmation = (playerId: string, discordId: string, playerName: string) => {
         if (!team) return;
 
         const player = getPlayerDetails(playerId);
@@ -403,7 +379,6 @@ export function TeamManagement() {
             return;
         }
 
-        // Check if player can be released
         if (!canReleasePlayer(player)) {
             if (player._id === team.captain._id || player._id === team.viceCaptain._id) {
                 toast({
@@ -422,16 +397,23 @@ export function TeamManagement() {
             return;
         }
 
-        try {
-            await axios.delete(`${BASE_URL}/teams/${team._id}/players/${playerId}`);
+        setPlayerToRelease({ id: playerId, discordId, name: playerName });
+        setShowReleaseConfirmation(true);
+    };
 
-            await axios.post("https://testing-bot-rt1b.onrender.com/assign-player-role", { action: "remove", discordId })
+    const releasePlayer = async () => {
+        if (!team || !playerToRelease) return;
+
+        try {
+            setIsAction(true)
+            await axios.delete(`${BASE_URL}/teams/${team._id}/players/${playerToRelease.id}`);
+
+            await axios.post("https://testing-bot-rt1b.onrender.com/assign-player-role", { action: "remove", discordId: playerToRelease.discordId })
             toast({
                 title: "Success",
                 description: "Player released from team"
             });
 
-            // Refresh data
             const [teamRes, playersRes, allPlayersRes] = await Promise.all([
                 axios.get(`${BASE_URL}/teams/${id}`),
                 axios.get(`${BASE_URL}/players/available`),
@@ -446,6 +428,10 @@ export function TeamManagement() {
                 description: error.response?.data?.error || "Failed to release player",
                 variant: "destructive"
             });
+        } finally {
+            setIsAction(false)
+            setShowReleaseConfirmation(false);
+            setPlayerToRelease(null);
         }
     };
 
@@ -486,26 +472,6 @@ export function TeamManagement() {
         const inCooldown = isPlayerInCooldown(player);
 
         return !isCaptain && !isViceCaptain && !inCooldown;
-    };
-
-    // Helper function to get team size validation color
-    const getTeamSizeColor = () => {
-        const count = team.players.length;
-        if (count > MAX_PLAYERS) return "text-red-500";
-        if (count === MAX_PLAYERS) return "text-amber-500";
-        return "text-green-500";
-    };
-
-    // Helper function to get team size validation message
-    const getTeamSizeMessage = () => {
-        const count = team.players.length;
-        if (count > MAX_PLAYERS) {
-            return `Too many players! Maximum is ${MAX_PLAYERS}`;
-        }
-        if (count === MAX_PLAYERS) {
-            return "Maximum players reached";
-        }
-        return `${count}/${MAX_PLAYERS} players`;
     };
 
     if (isLoading) {
@@ -570,15 +536,23 @@ export function TeamManagement() {
         member.discordId.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    // FIXED: Only show members who don't have ANY player profile
     const membersWithoutPlayers = filteredMembers.filter(member => {
-        // Check if this member already has ANY player profile (across all teams)
         const hasPlayerProfile = allPlayers.some(player =>
             player.member?._id === member?._id
         );
 
         return !hasPlayerProfile;
     });
+
+    // Get player name for confirmation dialog
+    const getSelectedPlayerName = () => {
+        if (newTeamPlayers.length > 0) {
+            const selectedPlayerData = newTeamPlayers.find(sp => sp.playerId === selectedPlayer);
+            return selectedPlayerData?.discordName || "";
+        } else {
+            return availablePlayers.find(player => player._id === selectedPlayer)?.discordName || "";
+        }
+    };
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-volleyball-court/10">
@@ -589,7 +563,6 @@ export function TeamManagement() {
             />
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Team Full Warning */}
                 {team.players.length >= MAX_PLAYERS && (
                     <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
                         <div className="flex items-center gap-2">
@@ -686,10 +659,13 @@ export function TeamManagement() {
                                                                     disabled={isAction}
                                                                     variant="destructive"
                                                                     size="sm"
-                                                                    // @ts-ignore
-                                                                    onClick={() => releasePlayer(player._id,
+                                                                    onClick={() => handleReleasePlayerConfirmation(
                                                                         // @ts-ignore
-                                                                        player.discordId)}
+                                                                        player._id,
+                                                                        // @ts-ignore
+                                                                        player.discordId,
+                                                                        player.discordName
+                                                                    )}
                                                                 >
                                                                     Release
                                                                 </Button>
@@ -743,7 +719,7 @@ export function TeamManagement() {
                                 </div>
 
                                 <Button
-                                    onClick={addPlayer}
+                                    onClick={handleAddPlayerConfirmation}
                                     disabled={!selectedPlayer || team.players.length >= MAX_PLAYERS || isAction}
                                     className="w-full"
                                 >
@@ -885,11 +861,10 @@ export function TeamManagement() {
                                                                         variant={isSelected ? "default" : "outline"}
                                                                         size="sm"
                                                                         disabled={!canSelect && !isSelected || isAction}
-                                                                        onClick={() => canSelect && handleAddMemberToTeam(member)}
+                                                                        onClick={() => canSelect && createPlayerFromMember(member._id)}
                                                                     >
                                                                         <UserPlus className="h-4 w-4 mr-2" />
-                                                                        {isSelected ? "Selected" :
-                                                                            !canSelect ? "Full" : "Select"}
+                                                                        {!canSelect ? "Full" : "Add"}
                                                                     </Button>
                                                                 </div>
                                                             </div>
@@ -918,31 +893,39 @@ export function TeamManagement() {
                                             )}
                                         </div>
                                     </div>
-
-                                    {/* Add Multiple Players Button */}
-                                    {newTeamPlayers.length > 0 && team.players.length < MAX_PLAYERS && (
-                                        <div className="flex gap-2">
-                                            <Button
-                                                onClick={addMultiplePlayers}
-                                                className="flex-1"
-                                                disabled={team.players.length + newTeamPlayers.length > MAX_PLAYERS || isAction}
-                                            >
-                                                <Plus className="h-4 w-4 mr-2" />
-                                                Add {newTeamPlayers.length} Players to Team
-                                            </Button>
-                                            <Button
-                                                variant="outline"
-                                                onClick={() => setNewTeamPlayers([])}
-                                            >
-                                                Clear
-                                            </Button>
-                                        </div>
-                                    )}
                                 </div>
                             </CardContent>
                         </Card>
                     </div>
                 )}
+
+                {/* Add Player Confirmation Dialog */}
+                <ConfirmationDialog
+                    isOpen={showAddConfirmation}
+                    onClose={() => setShowAddConfirmation(false)}
+                    onConfirm={addPlayer}
+                    title="Add Player to Team"
+                    description={`Are you sure you want to add "${getSelectedPlayerName()}" to ${team.name}?`}
+                    confirmText="Add Player"
+                    cancelText="Cancel"
+                    isAction={isAction}
+                />
+
+                {/* Release Player Confirmation Dialog */}
+                <ConfirmationDialog
+                    isOpen={showReleaseConfirmation}
+                    onClose={() => {
+                        setShowReleaseConfirmation(false);
+                        setPlayerToRelease(null);
+                    }}
+                    onConfirm={releasePlayer}
+                    title="Release Player from Team"
+                    description={`Are you sure you want to release "${playerToRelease?.name}" from ${team.name}? This action cannot be undone.`}
+                    confirmText="Release Player"
+                    cancelText="Cancel"
+                    variant="destructive"
+                    isAction={isAction}
+                />
             </main>
         </div>
     );
