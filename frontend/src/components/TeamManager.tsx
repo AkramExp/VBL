@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { BASE_URL } from "@/config";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
-import { AlertCircle, CheckCircle, Clock, X as CloseIcon, Crown, Edit, Eye, Key, Plus, Save, Search, Shield, UserPlus, Users, X, Lock } from "lucide-react";
+import { AlertCircle, CheckCircle, Clock, X as CloseIcon, Crown, Edit, Eye, Key, Plus, Save, Search, Shield, UserPlus, Users, X, Lock, Loader } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -68,6 +68,8 @@ export function TeamManager() {
   const [passwordTeam, setPasswordTeam] = useState<Team | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+  const [isAction, setIsAction] = useState(false);
   const { toast } = useToast();
 
   const [newTeam, setNewTeam] = useState({
@@ -241,6 +243,7 @@ export function TeamManager() {
   };
 
   const handleCreateTeam = async (e: React.FormEvent) => {
+    setIsCreating(true);
     e.preventDefault();
 
     if (newTeam.selectedPlayers.length < MIN_PLAYERS) {
@@ -345,6 +348,8 @@ export function TeamManager() {
         description: error.response?.data?.error || "Failed to create team",
         variant: "destructive"
       });
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -416,6 +421,7 @@ export function TeamManager() {
 
   const saveTeamLeadership = async (teamId: string) => {
     try {
+      setIsAction(true)
       const currentTeam = teams.find(team => team._id === teamId);
       if (!currentTeam) {
         toast({
@@ -517,6 +523,8 @@ export function TeamManager() {
         description: error.response?.data?.error || "Failed to update team leadership",
         variant: "destructive"
       });
+    } finally {
+      setIsAction(false)
     }
   };
 
@@ -907,11 +915,11 @@ export function TeamManager() {
 
             <Button
               type="submit"
-              disabled={newTeam.selectedPlayers.length < MIN_PLAYERS || newTeam.selectedPlayers.length > MAX_PLAYERS || !newTeam.captainId || !newTeam.viceCaptainId}
+              disabled={newTeam.selectedPlayers.length < MIN_PLAYERS || newTeam.selectedPlayers.length > MAX_PLAYERS || !newTeam.captainId || !newTeam.viceCaptainId || isCreating}
               className="w-full"
             >
-              <Plus className="h-4 w-4 mr-2" />
-              Create Team ({newTeam.selectedPlayers.length}/{MIN_PLAYERS}+ players)
+              {isCreating ? <Loader /> : <Plus className="h-4 w-4 mr-2" />}
+              {isCreating ? "Creating..." : `Create Team (${newTeam.selectedPlayers.length}/${MIN_PLAYERS}+ players)`}
             </Button>
           </form>
         </CardContent>
@@ -1104,7 +1112,7 @@ export function TeamManager() {
                 <div className="flex gap-2 pt-2">
                   <Button
                     onClick={saveTeamPassword}
-                    disabled={newPassword !== confirmPassword || newPassword.length < 4}
+                    disabled={newPassword !== confirmPassword || newPassword.length < 4 || isAction}
                     className="flex-1"
                   >
                     <Save className="h-4 w-4 mr-2" />
@@ -1113,6 +1121,7 @@ export function TeamManager() {
                   <Button
                     variant="outline"
                     onClick={closePasswordModal}
+                    disabled={isAction}
                   >
                     Cancel
                   </Button>
@@ -1154,9 +1163,11 @@ export function TeamManager() {
 
                       {/* Players Column - Show usernames */}
                       <TableCell>
-                        <Badge variant="secondary" className="text-xs flex items-center gap-2">
-                          {team.players.length} <span>Players</span>
-                        </Badge>
+                        <div className="w-fit">
+                          <Badge variant="secondary" className="text-xs flex items-center gap-2">
+                            {team.players.length} <span>Players</span>
+                          </Badge>
+                        </div>
                       </TableCell>
 
                       {/* Captain Column */}
@@ -1263,7 +1274,7 @@ export function TeamManager() {
                                 variant="default"
                                 size="sm"
                                 onClick={() => saveTeamLeadership(team._id)}
-                                disabled={!canEditLeadership}
+                                disabled={!canEditLeadership || isAction}
                                 title={!canEditLeadership ? "Need at least 2 players not in cooldown" : "Save leadership changes"}
                               >
                                 <Save className="h-4 w-4" />
@@ -1272,6 +1283,7 @@ export function TeamManager() {
                                 variant="outline"
                                 size="sm"
                                 onClick={cancelEditing}
+                                disabled={isAction}
                               >
                                 <CloseIcon className="h-4 w-4" />
                               </Button>

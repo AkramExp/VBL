@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Trophy, Filter, X, ChevronDown, ChevronUp, Smartphone, ChevronRight } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Trophy, Filter, X, ChevronDown, ChevronUp, Smartphone, ChevronRight, Search } from "lucide-react";
 import axios from "axios";
 import { BASE_URL } from "@/config";
 import { Link } from "react-router-dom";
@@ -37,6 +38,7 @@ export function Fixtures() {
     const [stages, setStages] = useState<Stage[]>([]);
     const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
     const [selectedStages, setSelectedStages] = useState<string[]>([]);
+    const [searchQuery, setSearchQuery] = useState(""); // New search state
     const [isLoading, setIsLoading] = useState(true);
     const [showFilters, setShowFilters] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
@@ -88,11 +90,11 @@ export function Fixtures() {
         return () => window.removeEventListener('resize', checkIsMobile);
     }, []);
 
-    const toggleTeamSelection = (team: string) => {
-        if (selectedTeams.includes(team)) {
-            setSelectedTeams(selectedTeams.filter(t => t !== team));
+    const toggleTeamSelection = (team: any) => {
+        if (selectedTeams.includes(team.name)) {
+            setSelectedTeams(selectedTeams.filter(t => t !== team.name));
         } else {
-            setSelectedTeams([...selectedTeams, team]);
+            setSelectedTeams([...selectedTeams, team.name]);
         }
     };
 
@@ -102,11 +104,6 @@ export function Fixtures() {
         } else {
             setSelectedStages([...selectedStages, stageId]);
         }
-    };
-
-    const clearAllSelections = () => {
-        setSelectedTeams([]);
-        setSelectedStages([]);
     };
 
     const toggleSection = (section: string) => {
@@ -205,7 +202,24 @@ export function Fixtures() {
             );
         }
 
+        // Filter by search query
+        if (searchQuery.trim() !== "") {
+            const query = searchQuery.toLowerCase().trim();
+            filteredFixtures = filteredFixtures.filter(fixture =>
+                fixture.team1.name.toLowerCase().includes(query) ||
+                fixture.team2.name.toLowerCase().includes(query) ||
+                fixture.stage?.name.toLowerCase().includes(query)
+            );
+        }
+
         return filteredFixtures;
+    };
+
+    // Clear all filters
+    const clearAllFilters = () => {
+        setSelectedTeams([]);
+        setSelectedStages([]);
+        setSearchQuery("");
     };
 
     // Group fixtures by stage
@@ -248,81 +262,90 @@ export function Fixtures() {
             />
 
             {/* Main Content */}
-            < main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" >
-                {/* Filter Toggle Button */}
-                < div className="mb-6" >
-                    <Button
-                        variant="outline"
-                        onClick={() => setShowFilters(!showFilters)}
-                        className="flex items-center gap-2"
-                    >
-                        <Filter className="h-4 w-4" />
-                        Filters
-                        {showFilters ? (
-                            <ChevronUp className="h-4 w-4" />
-                        ) : (
-                            <ChevronDown className="h-4 w-4" />
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                {/* Search and Filter Section */}
+                <div className="mb-6 space-y-4">
+                    {/* Filter Toggle and Clear Filters */}
+                    <div className="flex items-center justify-between">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowFilters(!showFilters)}
+                            className="flex items-center gap-2"
+                        >
+                            <Filter className="h-4 w-4" />
+                            Filters
+                            {showFilters ? (
+                                <ChevronUp className="h-4 w-4" />
+                            ) : (
+                                <ChevronDown className="h-4 w-4" />
+                            )}
+                            {(selectedTeams.length > 0 || selectedStages.length > 0 || searchQuery) && (
+                                <Badge variant="secondary" className="ml-2">
+                                    {selectedTeams.length + selectedStages.length + (searchQuery ? 1 : 0)}
+                                </Badge>
+                            )}
+                        </Button>
+
+                        {(selectedTeams.length > 0 || selectedStages.length > 0 || searchQuery) && (
+                            <Button
+                                variant="ghost"
+                                onClick={clearAllFilters}
+                                className="text-muted-foreground hover:text-foreground"
+                            >
+                                Clear all
+                            </Button>
                         )}
-                        {(selectedTeams.length > 0 || selectedStages.length > 0) && (
-                            <Badge variant="secondary" className="ml-2">
-                                {selectedTeams.length + selectedStages.length}
-                            </Badge>
-                        )}
-                    </Button>
-                </div >
+                    </div>
+                </div>
 
                 {/* Filters Panel */}
-                {
-                    showFilters && (
-                        <div className="mb-6 p-4 border rounded-lg bg-muted/30">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="font-medium">Filter by:</h3>
-                            </div>
+                {showFilters && (
+                    <div className="mb-6 p-4 border rounded-lg bg-muted/30">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-medium">Filter by:</h3>
+                        </div>
 
-                            {/* Team Filter */}
-                            <div className="mb-4">
-                                <h4 className="font-medium text-sm mb-2">Teams:</h4>
-                                <div className="flex flex-wrap gap-2 min-h-[40px] items-center">
-                                    {teams.map((team) => (
-                                        <Badge
-                                            key={team}
-                                            variant={selectedTeams.includes(team) ? "default" : "outline"}
-                                            className={`px-3 py-1 cursor-pointer transition-all flex-shrink-0 ${selectedTeams.includes(team)
-                                                ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                                                : "hover:bg-muted"
-                                                }`}
-                                            onClick={() => toggleTeamSelection(team)}
-                                        >
-                                            {team}
-
-                                        </Badge>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Stage Filter */}
-                            <div>
-                                <h4 className="font-medium text-sm mb-2">Stages:</h4>
-                                <div className="flex flex-wrap gap-2 min-h-[40px] items-center">
-                                    {stages.map((stage) => (
-                                        <Badge
-                                            key={stage._id}
-                                            variant={selectedStages.includes(stage._id) ? "default" : "outline"}
-                                            className={`px-3 py-1 cursor-pointer transition-all flex-shrink-0 ${selectedStages.includes(stage._id)
-                                                ? "bg-secondary text-secondary-foreground hover:bg-secondary/90"
-                                                : "hover:bg-muted"
-                                                }`}
-                                            onClick={() => toggleStageSelection(stage._id)}
-                                        >
-                                            {stage.name}
-
-                                        </Badge>
-                                    ))}
-                                </div>
+                        {/* Team Filter */}
+                        <div className="mb-4">
+                            <h4 className="font-medium text-sm mb-2">Teams:</h4>
+                            <div className="flex flex-wrap gap-2 min-h-[40px] items-center">
+                                {teams.map((team: any) => (
+                                    <Badge
+                                        key={team.name}
+                                        variant={selectedTeams.includes(team.name) ? "default" : "outline"}
+                                        className={`px-3 py-1 cursor-pointer transition-all flex-shrink-0 ${selectedTeams.includes(team.name)
+                                            ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                            : "hover:bg-muted"
+                                            }`}
+                                        onClick={() => toggleTeamSelection(team)}
+                                    >
+                                        {team.name}
+                                    </Badge>
+                                ))}
                             </div>
                         </div>
-                    )
-                }
+
+                        {/* Stage Filter */}
+                        <div>
+                            <h4 className="font-medium text-sm mb-2">Stages:</h4>
+                            <div className="flex flex-wrap gap-2 min-h-[40px] items-center">
+                                {stages.map((stage) => (
+                                    <Badge
+                                        key={stage._id}
+                                        variant={selectedStages.includes(stage._id) ? "default" : "outline"}
+                                        className={`px-3 py-1 cursor-pointer transition-all flex-shrink-0 ${selectedStages.includes(stage._id)
+                                            ? "bg-secondary text-secondary-foreground hover:bg-secondary/90"
+                                            : "hover:bg-muted"
+                                            }`}
+                                        onClick={() => toggleStageSelection(stage._id)}
+                                    >
+                                        {stage.name}
+                                    </Badge>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 <div className="space-y-6">
                     {/* Upcoming Fixtures Section */}
@@ -588,8 +611,8 @@ export function Fixtures() {
                         </Card>
                     ) : null}
                 </div>
-            </main >
-        </div >
+            </main>
+        </div>
     );
 }
 

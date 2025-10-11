@@ -105,7 +105,7 @@ exports.updatePlayer = async (req, res) => {
 
             player.currentTeam = teamId;
             player.status = 'signed';
-            player.signDate = new Date();
+            player.joinDate = new Date();
             player.releaseDate = null;
             player.cooldownEnds = null;
 

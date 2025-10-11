@@ -4,8 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BASE_URL } from "@/config";
 import axios from "axios";
+import { stat } from "fs";
 import { Award, BarChart3, TrendingUp, Trophy } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 interface TeamStats {
     name: any;
@@ -14,6 +16,7 @@ interface TeamStats {
     draws: number;
     points: number;
     matchesPlayed: number;
+    averagePointDifferential: number;
 }
 
 interface Fixture {
@@ -58,17 +61,17 @@ export function TeamRankings() {
         const stats: { [key: string]: TeamStats } = {};
 
         // Initialize all teams with zero stats
-        teams.forEach(team => {
-            stats[team._id] = {
-                name: team.name,
+        teams.forEach((team: any) => {
+            stats[team.name] = {
+                name: team,
                 wins: 0,
                 losses: 0,
                 draws: 0,
                 points: 0,
-                matchesPlayed: 0
+                matchesPlayed: 0,
+                averagePointDifferential: 0
             };
         });
-
 
         // Calculate stats from fixtures
         fixtures.forEach(fixture => {
@@ -79,6 +82,28 @@ export function TeamRankings() {
                 // Increment matches played
                 stats[team1].matchesPlayed++;
                 stats[team2].matchesPlayed++;
+
+                let team1Scores = [];
+                let team2Scores = [];
+
+                // Collect scores from all sets
+                for (let i = 1; i <= 3; i++) {
+                    const set = fixture.result.sets[`set${i}`];
+                    if (set) {
+                        team1Scores.push(set.team1Score);
+                        team2Scores.push(set.team2Score);
+                    }
+                }
+
+                // Calculate averages
+                const team1Avg = team1Scores.length > 0 ?
+                    team1Scores.reduce((sum, score) => sum + score, 0) / team1Scores.length : 0;
+                const team2Avg = team2Scores.length > 0 ?
+                    team2Scores.reduce((sum, score) => sum + score, 0) / team2Scores.length : 0;
+
+                // Update average point differential
+                stats[team1].averagePointDifferential += (team1Avg - team2Avg);
+                stats[team2].averagePointDifferential += (team2Avg - team1Avg);
 
                 if (fixture.result.winner === "Draw") {
                     // Draw
@@ -101,7 +126,7 @@ export function TeamRankings() {
         });
 
         // Convert to array and sort by points (descending)
-        const sortedStats = Object.values(stats).sort((a, b) => {
+        const sortedStats = Object.values(stats).sort((a: any, b: any) => {
             // First sort by points
             if (b.points !== a.points) {
                 return b.points - a.points;
@@ -111,7 +136,7 @@ export function TeamRankings() {
                 return b.wins - a.wins;
             }
             // If wins are equal, sort by name
-            return a.name.localeCompare(b.name);
+            return a.name.name.localeCompare(b.name.name);
         });
 
         setTeamStats(sortedStats);
@@ -128,7 +153,6 @@ export function TeamRankings() {
             calculateTeamStats();
         }
     }, [fixtures, teams]);
-
 
     const getRankBadge = (index: number) => {
         if (index === 0) return <Badge className="bg-yellow-500 text-white">1st</Badge>;
@@ -158,10 +182,7 @@ export function TeamRankings() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-volleyball-court/10">
             {/* Header */}
-            <Header
-                title="Indian Volleyball League"
-                subtitle="Team Rankings & Standings"
-            />
+            <Header title="Indian Volleyball League" subtitle="Team Rankings" />
 
             {/* Main Content */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -204,7 +225,7 @@ export function TeamRankings() {
                         </CardHeader>
                         <CardContent>
                             <div className="text-lg font-bold truncate">
-                                {teamStats[0]?.name || 'No data'}
+                                {teamStats[0]?.name.name || 'No data'}
                             </div>
                             <p className="text-xs text-muted-foreground">
                                 {teamStats[0]?.points || 0} points
@@ -252,6 +273,7 @@ export function TeamRankings() {
                                         <TableHead className="text-center">Draws</TableHead>
                                         <TableHead className="text-center">Win %</TableHead>
                                         <TableHead className="text-center">Points</TableHead>
+                                        <TableHead className="text-center">Avg Point Diff</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -261,7 +283,7 @@ export function TeamRankings() {
                                                 {getRankBadge(index)}
                                             </TableCell>
                                             <TableCell className="font-semibold">
-                                                {team.name}
+                                                {team.name.name}
                                             </TableCell>
                                             <TableCell className="text-center">
                                                 {team.matchesPlayed}
@@ -281,6 +303,12 @@ export function TeamRankings() {
                                             <TableCell className="text-center font-bold text-primary">
                                                 {team.points}
                                             </TableCell>
+                                            <TableCell className="text-center font-medium">
+                                                {team.averagePointDifferential > 0 ?
+                                                    <span className="text-green-600">+{team.averagePointDifferential.toFixed(1)}</span> :
+                                                    <span className="text-red-600">{team.averagePointDifferential.toFixed(1)}</span>
+                                                }
+                                            </TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>
@@ -289,20 +317,20 @@ export function TeamRankings() {
 
                         {/* Scoring System Explanation */}
                         <div className="mt-6 p-4 bg-muted/30 rounded-lg">
-                            <h4 className="font-medium mb-2 flex items-center gap-2">
+                            <h4 className="font-medium mb-6 flex items-center gap-2">
                                 <Award className="h-4 w-4" />
                                 Scoring System
                             </h4>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                                <div className="flex items-center gap-2">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                                <div className="flex items-center gap-2 flex-col sm:flex-row">
                                     <Badge className="bg-green-600">Win</Badge>
                                     <span>2 points</span>
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 flex-col sm:flex-row">
                                     <Badge className="bg-yellow-500">Draw</Badge>
                                     <span>1 point</span>
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 flex-col sm:flex-row">
                                     <Badge className="bg-red-600">Loss</Badge>
                                     <span>0 points</span>
                                 </div>

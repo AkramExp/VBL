@@ -1,6 +1,7 @@
 const Team = require('../models/team.model');
 const Player = require('../models/player.model');
 const Transaction = require('../models/transaction.model');
+const bcrypt = require('bcrypt');
 
 exports.createTeam = async (req, res) => {
     try {
@@ -22,7 +23,9 @@ exports.createTeam = async (req, res) => {
             return res.status(400).json({ error: 'Some players are not available' });
         }
 
-        const newTeam = new Team({ name, password, captain: captainId, viceCaptain: viceCaptainId, players: playerIds });
+        const hashedPassword = bcrypt.hashSync(password, 10);
+
+        const newTeam = new Team({ name, password: hashedPassword, captain: captainId, viceCaptain: viceCaptainId, players: playerIds });
         await newTeam.save();
 
         await Player.updateMany(
@@ -75,7 +78,7 @@ exports.getAllTeams = async (req, res) => {
                     path: 'member',
                     select: 'discordName discordId'
                 }
-            });
+            }).select('-password'); // Exclude password field
 
         res.json(teams);
     } catch (error) {
@@ -90,6 +93,7 @@ exports.getTeamById = async (req, res) => {
             .populate({ path: "players", populate: { path: "member", select: "discordName discordId" } })
             .populate({ path: "captain", populate: { path: "member", select: "discordName discordId" } })
             .populate({ path: "viceCaptain", populate: { path: "member", select: "discordName discordId" } })
+            .select('-password'); // Exclude password field
 
         if (!team) return res.status(404).json({ error: 'Team not found' });
         res.json(team);
@@ -100,12 +104,11 @@ exports.getTeamById = async (req, res) => {
 
 exports.addPlayerToTeam = async (req, res) => {
     try {
-        const { playerId, password } = req.body;
+        const { playerId } = req.body;
         const teamId = req.params.id;
 
         const team = await Team.findById(teamId);
         if (!team) return res.status(404).json({ error: 'Team not found' });
-        if (team.password !== password) return res.status(401).json({ error: 'Invalid team password' });
 
         const player = await Player.findById(playerId).populate('member');
         if (!player) return res.status(404).json({ error: 'Player not found' });
@@ -143,11 +146,9 @@ exports.addPlayerToTeam = async (req, res) => {
 exports.releasePlayerFromTeam = async (req, res) => {
     try {
         const { teamId, playerId } = req.params;
-        const { password } = req.body;
 
         const team = await Team.findById(teamId);
         if (!team) return res.status(404).json({ error: 'Team not found' });
-        if (team.password !== password) return res.status(401).json({ error: 'Invalid team password' });
         if (!team.players.includes(playerId)) return res.status(400).json({ error: 'Player not in team' });
 
         team.players = team.players.filter(p => p.toString() !== playerId);
@@ -265,7 +266,9 @@ exports.updateTeamPassword = async (req, res) => {
             return res.status(404).json({ error: 'Team not found' });
         }
 
-        team.password = password;
+        const hashedPassword = bcrypt.hashSync(password, 10);
+
+        team.password = hashedPassword;
         await team.save();
 
         res.json({
@@ -281,3 +284,27 @@ exports.updateTeamPassword = async (req, res) => {
         res.status(500).json({ error: 'Failed to update team password' });
     }
 };
+
+exports.loginTeam = async (req, res) => {
+    try {
+        const { password } = req.body;
+        const { teamId } = req.params;
+
+        const findTeam = await Team.findById(teamId);
+
+
+        if (!findTeam) {
+            return res.status(404).json({ error: 'Team not found', success: false });
+        }
+        const passwordMatch = bcrypt.compareSync(password, findTeam.password);
+        if (!passwordMatch) {
+            return res.status(401).json({ error: 'Invalid team password', success: false });
+        }
+
+        res.json({ message: 'Login successful', success: true });
+
+    } catch (error) {
+        console.error('Error logging in team:', error);
+        res.status(500).json({ error: 'Failed to log in team', success: false });
+    }
+}

@@ -119,7 +119,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
             case 'players':
                 return <PlayerManager />;
             case 'fixtures':
-                return <FixtureManager teams={teams} stages={stages} getFixtures={getFixtures} />;
+                return <FixtureManager teams={teams} stages={stages} getFixtures={getFixtures} fixtures={fixtures} />;
             case 'stages':
                 return <StageManager stages={stages} getStages={getStages} getFixtures={getFixtures} />;
             case 'transactions':

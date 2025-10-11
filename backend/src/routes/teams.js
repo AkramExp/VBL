@@ -3,6 +3,7 @@ const router = express.Router();
 const teamController = require('../controllers/teamController');
 
 router.post('/', teamController.createTeam);
+router.post('/login/:teamId', teamController.loginTeam);
 router.get('/', teamController.getAllTeams);
 router.get('/:id', teamController.getTeamById);
 router.put("/:teamId/leadership", teamController.teamLeadership);

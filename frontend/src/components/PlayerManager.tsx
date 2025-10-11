@@ -5,10 +5,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Users, Clock, Building2, UserX, UserCheck, Search, Filter, Edit, Save, X, Trash2, Crown, Shield, AlertCircle } from "lucide-react";
+import { Users, Clock, Building2, UserX, UserCheck, Search, Filter, Edit, Save, X, Trash2, Crown, Shield, AlertCircle, UserPlus, Key, Loader } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 import { BASE_URL } from "@/config";
+import { Label } from "@/components/ui/label";
+
+interface Member {
+    _id: string;
+    discordId: string;
+    discordName: string;
+}
 
 interface Player {
     _id: string;
@@ -45,21 +52,30 @@ interface Team {
 export function PlayerManager() {
     const [players, setPlayers] = useState<Player[]>([]);
     const [teams, setTeams] = useState<Team[]>([]);
+    const [members, setMembers] = useState<Member[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState<string>("all");
     const [teamFilter, setTeamFilter] = useState<string>("all");
     const [editingPlayer, setEditingPlayer] = useState<string | null>(null);
     const [newTeamId, setNewTeamId] = useState<string>("no-team");
+    const [isAction, setIsAction] = useState(false);
+
+    // New member creation state
+    const [showMemberSelection, setShowMemberSelection] = useState(false);
+    const [memberSearchTerm, setMemberSearchTerm] = useState("");
+    const [isCreatingMember, setIsCreatingMember] = useState(false);
+
     const { toast } = useToast();
 
     const MAX_PLAYERS = 12;
 
     const fetchData = async () => {
         try {
-            const [playersRes, teamsRes] = await Promise.all([
+            const [playersRes, teamsRes, membersRes] = await Promise.all([
                 axios.get(`${BASE_URL}/players`),
-                axios.get(`${BASE_URL}/teams`)
+                axios.get(`${BASE_URL}/teams`),
+                axios.get(`${BASE_URL}/members`)
             ]);
 
             // Enhance players with captain/vice-captain information
@@ -74,6 +90,7 @@ export function PlayerManager() {
 
             setPlayers(enhancedPlayers);
             setTeams(teamsRes.data);
+            setMembers(membersRes.data);
         } catch (error) {
             console.error("Error fetching data:", error);
             toast({
@@ -89,6 +106,53 @@ export function PlayerManager() {
     useEffect(() => {
         fetchData();
     }, []);
+
+    // Filter members for the member selection modal
+    const filteredMembers = members.filter(member =>
+        member?.discordName?.toLowerCase().includes(memberSearchTerm.toLowerCase()) ||
+        member.discordId.toLowerCase().includes(memberSearchTerm.toLowerCase())
+    );
+
+    const membersWithoutPlayers = filteredMembers.filter(member =>
+        !players.some(player => player.member?._id === member._id)
+    );
+
+    const createPlayerFromMember = async (memberId: string) => {
+        try {
+            setIsCreatingMember(true);
+            const member = members.find(m => m._id === memberId);
+            if (!member) {
+                throw new Error("Member not found");
+            }
+
+            const response = await axios.post(`${BASE_URL}/players`, {
+                memberId
+            });
+
+            toast({
+                title: "Success",
+                description: "Player created successfully"
+            });
+
+            // Refresh the players list
+            await fetchData();
+            setShowMemberSelection(false);
+            setMemberSearchTerm("");
+
+        } catch (error: any) {
+            toast({
+                title: "Error",
+                description: error.response?.data?.error || "Failed to create player",
+                variant: "destructive"
+            });
+        } finally {
+            setIsCreatingMember(false);
+        }
+    };
+
+    const handleAddMemberToPlayers = async (member: Member) => {
+        await createPlayerFromMember(member._id);
+    };
 
     const getTeamName = (teamId: string) => {
         const team = teams.find(t => t._id === teamId);
@@ -201,6 +265,7 @@ export function PlayerManager() {
 
     const updatePlayerTeam = async (playerId: string) => {
         try {
+            setIsAction(true)
             const player = players.find(p => p._id === playerId);
             if (!player) return;
 
@@ -269,11 +334,14 @@ export function PlayerManager() {
                 description: error.response?.data?.error || "Failed to update player team",
                 variant: "destructive"
             });
+        } finally {
+            setIsAction(false)
         }
     };
 
     const removeFromTeam = async (playerId: string) => {
         try {
+            setIsAction(true)
             const player = players.find(p => p._id === playerId);
             if (!player) return;
 
@@ -306,6 +374,8 @@ export function PlayerManager() {
                 description: error.response?.data?.error || "Failed to remove player from team",
                 variant: "destructive"
             });
+        } finally {
+            setIsAction(false)
         }
     };
 
@@ -349,12 +419,23 @@ export function PlayerManager() {
 
     return (
         <div className="space-y-6">
+
             <Card>
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle className="flex items-center gap-2 text-md sm:text-xl">
                         <Users className="h-5 w-5" />
                         Player Management ({players.length} players)
                     </CardTitle>
+                    <Button
+                        onClick={() => {
+                            setShowMemberSelection(true);
+                            setMemberSearchTerm("");
+                        }}
+                        className="flex items-center gap-2"
+                    >
+                        <UserPlus className="h-4 w-4" />
+                        <span className="hidden sm:block">Add New Member</span>
+                    </Button>
                 </CardHeader>
                 <CardContent>
                     {/* Search and Filter Section */}
@@ -552,7 +633,7 @@ export function PlayerManager() {
                                                             <Button
                                                                 size="sm"
                                                                 onClick={() => updatePlayerTeam(player._id)}
-                                                                disabled={
+                                                                disabled={isAction ||
                                                                     newTeamId === (player.currentTeam || "no-team") ||
                                                                     (newTeamId !== "no-team" && isTeamFull(newTeamId) && newTeamId !== player.currentTeam)
                                                                 }
@@ -568,6 +649,7 @@ export function PlayerManager() {
                                                                 size="sm"
                                                                 variant="outline"
                                                                 onClick={cancelEditing}
+                                                                disabled={isAction}
                                                             >
                                                                 <X className="h-3 w-3" />
                                                             </Button>
@@ -588,7 +670,7 @@ export function PlayerManager() {
                                                                     size="sm"
                                                                     variant="destructive"
                                                                     onClick={() => removeFromTeam(player._id)}
-                                                                    disabled={isCaptainOrViceCaptain}
+                                                                    disabled={isCaptainOrViceCaptain || isAction}
                                                                     title={isCaptainOrViceCaptain ? "Cannot remove captain/vice-captain" : "Remove from team"}
                                                                 >
                                                                     <Trash2 className="h-3 w-3" />
@@ -614,7 +696,7 @@ export function PlayerManager() {
                             </h3>
                             <p className="text-muted-foreground mb-4">
                                 {players.length === 0
-                                    ? "Players will appear here once they are created through team management."
+                                    ? "Get started by adding members as players using the button above."
                                     : "Try adjusting your search or filters to see more players."
                                 }
                             </p>
@@ -669,6 +751,117 @@ export function PlayerManager() {
                     )}
                 </CardContent>
             </Card>
+
+            {/* Member Selection Modal */}
+            {showMemberSelection && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <Card className="w-full max-w-2xl">
+                        <CardHeader>
+                            <CardTitle className="flex items-center justify-between">
+                                <span>Add New Member as Player</span>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                        setShowMemberSelection(false);
+                                        setMemberSearchTerm("");
+                                    }}
+                                    disabled={isCreatingMember}
+                                >
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                                {/* Search Bar */}
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                                    <Input
+                                        placeholder="Search members by name or Discord ID..."
+                                        value={memberSearchTerm}
+                                        onChange={(e) => setMemberSearchTerm(e.target.value)}
+                                        className="pl-10"
+                                        disabled={isCreatingMember}
+                                    />
+                                    {memberSearchTerm && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => setMemberSearchTerm("")}
+                                            className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+                                            disabled={isCreatingMember}
+                                        >
+                                            <X className="h-3 w-3" />
+                                        </Button>
+                                    )}
+                                </div>
+
+                                {/* Members List */}
+                                <div>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <Label>Select a member to create player profile:</Label>
+                                        <span className="text-sm text-muted-foreground">
+                                            {membersWithoutPlayers.length} members found
+                                        </span>
+                                    </div>
+
+                                    <div className="max-h-96 overflow-y-auto border rounded">
+                                        {membersWithoutPlayers.length > 0 ? (
+                                            <div className="divide-y">
+                                                {membersWithoutPlayers.map(member => (
+                                                    <div
+                                                        key={member._id}
+                                                        className="p-4 cursor-pointer hover:bg-muted transition-colors"
+                                                        onClick={() => !isCreatingMember && handleAddMemberToPlayers(member)}
+                                                    >
+                                                        <div className="flex items-center justify-between">
+                                                            <div>
+                                                                <div className="font-medium">{member?.discordName}</div>
+                                                                <div className="text-sm text-muted-foreground">
+                                                                    Discord ID: {member.discordId}
+                                                                </div>
+                                                            </div>
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                disabled={isCreatingMember}
+                                                            >
+                                                                <UserPlus className="h-4 w-4 mr-2" />
+                                                                Add as Player
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="text-center py-8">
+                                                <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                                <p className="text-muted-foreground">
+                                                    {memberSearchTerm
+                                                        ? `No members found matching "${memberSearchTerm}"`
+                                                        : "All members already have player profiles"
+                                                    }
+                                                </p>
+                                                {memberSearchTerm && (
+                                                    <Button
+                                                        variant="outline"
+                                                        onClick={() => setMemberSearchTerm("")}
+                                                        className="mt-2"
+                                                        disabled={isCreatingMember}
+                                                    >
+                                                        Clear search
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
         </div>
     );
 }

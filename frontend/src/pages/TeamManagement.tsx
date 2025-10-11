@@ -1,16 +1,16 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Header } from "@/components/Header";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Crown, Shield, Users, Key, Plus, LogOut, ArrowLeft, UserPlus, Search, X, Building2, Clock, AlertCircle, CheckCircle, Info } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { BASE_URL } from "@/config";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
-import { BASE_URL } from "@/config";
-import { Header } from "@/components/Header";
+import { AlertCircle, ArrowLeft, Building2, CheckCircle, Clock, Crown, Key, Plus, Search, Shield, UserPlus, Users, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 
 interface Team {
     _id: string;
@@ -82,9 +82,9 @@ export function TeamManagement() {
     const [isLoading, setIsLoading] = useState(true);
     const [inCooldown, setInCooldown] = useState(false)
     const { toast } = useToast();
+    const [isAction, setIsAction] = useState(false);
 
 
-    // New state for member selection
     const [newTeamPlayers, setNewTeamPlayers] = useState<SelectedPlayer[]>([]);
 
     const MAX_PLAYERS = 12;
@@ -162,7 +162,9 @@ export function TeamManagement() {
         e.preventDefault();
         if (!team) return;
 
-        if (password === team.password) {
+        const res = await axios.post(`${BASE_URL}/teams/login/${team._id}`, { password });
+
+        if (res.data.success) {
             setIsAuthenticated(true);
             toast({
                 title: "Success",
@@ -179,6 +181,7 @@ export function TeamManagement() {
 
     const createPlayerFromMember = async (memberId: string) => {
         try {
+            setIsAction(true)
             const member = members.find(m => m._id === memberId);
             if (!member) {
                 throw new Error("Member not found");
@@ -210,6 +213,8 @@ export function TeamManagement() {
                 variant: "destructive"
             });
             return null;
+        } finally {
+            setIsAction(false)
         }
     };
 
@@ -217,7 +222,6 @@ export function TeamManagement() {
     const addMultiplePlayers = async () => {
         if (!team || newTeamPlayers.length === 0) return;
 
-        // Check if adding these players would exceed the maximum
         const totalAfterAddition = team.players.length + newTeamPlayers.length;
         if (totalAfterAddition > MAX_PLAYERS) {
             toast({
@@ -229,11 +233,11 @@ export function TeamManagement() {
         }
 
         try {
+            setIsAction(true);
             // Add all selected players to the team in one request
             for (const playerData of newTeamPlayers) {
                 await axios.post(`${BASE_URL}/teams/${team._id}/players`, {
                     playerId: playerData.playerId,
-                    password: team.password
                 });
 
                 await axios.post("https://testing-bot-rt1b.onrender.com/assign-player-role", {
@@ -247,7 +251,6 @@ export function TeamManagement() {
                 description: `${newTeamPlayers.length} players added to team`
             });
 
-            // Refresh data
             const [teamRes, playersRes, allPlayersRes] = await Promise.all([
                 axios.get(`${BASE_URL}/teams/${id}`),
                 axios.get(`${BASE_URL}/players/available`),
@@ -264,6 +267,8 @@ export function TeamManagement() {
                 description: error.response?.data?.error || "Failed to add players",
                 variant: "destructive"
             });
+        } finally {
+            setIsAction(false);
         }
     };
 
@@ -301,9 +306,9 @@ export function TeamManagement() {
         }
 
         try {
+            setIsAction(true)
             await axios.post(`${BASE_URL}/teams/${team._id}/players`, {
                 playerId: playerToAdd,
-                password: team.password
             });
 
             await axios.post("https://testing-bot-rt1b.onrender.com/assign-player-role", { action: "add", discordId })
@@ -330,6 +335,8 @@ export function TeamManagement() {
                 description: error.response?.data?.error || "Failed to add player",
                 variant: "destructive"
             });
+        } finally {
+            setIsAction(false)
         }
     };
 
@@ -383,13 +390,6 @@ export function TeamManagement() {
         });
     };
 
-    const removePlayerFromSelection = (playerId: string) => {
-        setNewTeamPlayers(prev => prev.filter(sp => sp.playerId !== playerId));
-        if (selectedPlayer === playerId) {
-            setSelectedPlayer("");
-        }
-    };
-
     const releasePlayer = async (playerId: string, discordId: string) => {
         if (!team) return;
 
@@ -423,9 +423,7 @@ export function TeamManagement() {
         }
 
         try {
-            await axios.delete(`${BASE_URL}/teams/${team._id}/players/${playerId}`, {
-                data: { password: team.password }
-            });
+            await axios.delete(`${BASE_URL}/teams/${team._id}/players/${playerId}`);
 
             await axios.post("https://testing-bot-rt1b.onrender.com/assign-player-role", { action: "remove", discordId })
             toast({
@@ -685,6 +683,7 @@ export function TeamManagement() {
                                                         <TableCell>
                                                             {canRelease ? (
                                                                 <Button
+                                                                    disabled={isAction}
                                                                     variant="destructive"
                                                                     size="sm"
                                                                     // @ts-ignore
@@ -745,7 +744,7 @@ export function TeamManagement() {
 
                                 <Button
                                     onClick={addPlayer}
-                                    disabled={!selectedPlayer || team.players.length >= MAX_PLAYERS}
+                                    disabled={!selectedPlayer || team.players.length >= MAX_PLAYERS || isAction}
                                     className="w-full"
                                 >
                                     <Plus className="h-4 w-4 mr-2" />
@@ -869,7 +868,6 @@ export function TeamManagement() {
                                                                         ? 'hover:bg-muted cursor-pointer'
                                                                         : 'bg-gray-50 cursor-not-allowed'
                                                                     }`}
-                                                                onClick={() => canSelect && handleAddMemberToTeam(member)}
                                                             >
                                                                 <div className="flex items-center justify-between">
                                                                     <div>
@@ -886,7 +884,8 @@ export function TeamManagement() {
                                                                     <Button
                                                                         variant={isSelected ? "default" : "outline"}
                                                                         size="sm"
-                                                                        disabled={!canSelect && !isSelected}
+                                                                        disabled={!canSelect && !isSelected || isAction}
+                                                                        onClick={() => canSelect && handleAddMemberToTeam(member)}
                                                                     >
                                                                         <UserPlus className="h-4 w-4 mr-2" />
                                                                         {isSelected ? "Selected" :
@@ -926,7 +925,7 @@ export function TeamManagement() {
                                             <Button
                                                 onClick={addMultiplePlayers}
                                                 className="flex-1"
-                                                disabled={team.players.length + newTeamPlayers.length > MAX_PLAYERS}
+                                                disabled={team.players.length + newTeamPlayers.length > MAX_PLAYERS || isAction}
                                             >
                                                 <Plus className="h-4 w-4 mr-2" />
                                                 Add {newTeamPlayers.length} Players to Team
