@@ -587,7 +587,7 @@ export function Fixtures() {
 
                     {/* Empty states */}
                     {fixtures.length === 0 ? (
-                        <Card className="shadow-card">
+                        <Card className="shadow-card w-full">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
                                     <Trophy className="h-5 w-5" />
@@ -601,7 +601,7 @@ export function Fixtures() {
                             </CardContent>
                         </Card>
                     ) : getUpcomingFixtures().length === 0 && getCompletedFixtures().length === 0 ? (
-                        <Card className="shadow-card">
+                        <Card className="shadow-card w-full">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
                                     <Trophy className="h-5 w-5" />

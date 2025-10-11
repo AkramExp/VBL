@@ -12,7 +12,7 @@ mongoose.connect(process.env.MONGODB_URI)
     .catch(error => console.log('MongoDB connection error:', error));
 
 // Middleware
-app.use(cors());
+app.use(cors({ origin: "https://ivl-vbl.vercel.app" }));
 app.use(express.json());
 
 // Use organized routes
