@@ -336,7 +336,7 @@ export function TeamManagement() {
                 playerId: playerToAdd,
             });
 
-            await axios.post("https://testing-bot-rt1b.onrender.com/assign-player-role", { action: "add", discordId })
+            await axios.post(`${import.meta.env.VITE_BOT_URL}/assign-player-role`, { action: "add", discordId })
 
             toast({
                 title: "Success",
@@ -408,7 +408,7 @@ export function TeamManagement() {
             setIsAction(true)
             await axios.delete(`${BASE_URL}/teams/${team._id}/players/${playerToRelease.id}`);
 
-            await axios.post("https://testing-bot-rt1b.onrender.com/assign-player-role", { action: "remove", discordId: playerToRelease.discordId })
+            await axios.post(`${import.meta.env.VITE_BOT_URL}/assign-player-role`, { action: "remove", discordId: playerToRelease.discordId })
             toast({
                 title: "Success",
                 description: "Player released from team"

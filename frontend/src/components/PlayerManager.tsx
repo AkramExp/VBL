@@ -332,7 +332,7 @@ export function PlayerManager() {
                     applyCooldown: false
                 });
 
-                await axios.post("https://testing-bot-rt1b.onrender.com/assign-player-role", { action: "remove", discordId: player.discordId });
+                await axios.post(`${import.meta.env.VITE_BOT_URL}/assign-player-role`, { action: "remove", discordId: player.discordId });
 
                 toast({
                     title: "Success",
@@ -346,7 +346,7 @@ export function PlayerManager() {
                     applyCooldown: false
                 });
 
-                await axios.post("https://testing-bot-rt1b.onrender.com/assign-player-role", { action: "add", discordId: player.discordId })
+                await axios.post(`${import.meta.env.VITE_BOT_URL}/assign-player-role`, { action: "add", discordId: player.discordId })
 
                 toast({
                     title: "Success",

@@ -349,15 +349,15 @@ export function TeamManager() {
     }
 
     try {
-      const promiseArr = newTeam.selectedPlayers.map(player => axios.post("https://testing-bot-rt1b.onrender.com/assign-player-role", { action: "add", discordId: player.discordId }));
+      const promiseArr = newTeam.selectedPlayers.map(player => axios.post(`${import.meta.env.VITE_BOT_URL}/assign-player-role`, { action: "add", discordId: player.discordId }));
       await Promise.all(promiseArr);
 
       const captainDiscordId = newTeam.selectedPlayers.find(player => player.playerId === newTeam.captainId).discordId;
       const viceCaptainDiscordId = newTeam.selectedPlayers.find(player => player.playerId === newTeam.viceCaptainId).discordId;
 
-      axios.post("https://testing-bot-rt1b.onrender.com/assign-captain-role", { action: "add", discordId: captainDiscordId });
+      axios.post(`${import.meta.env.VITE_BOT_URL}/assign-captain-role`, { action: "add", discordId: captainDiscordId });
 
-      axios.post("https://testing-bot-rt1b.onrender.com/assign-vice-captain-role", { action: "add", discordId: viceCaptainDiscordId });
+      axios.post(`${import.meta.env.VITE_BOT_URL}/assign-vice-captain-role`, { action: "add", discordId: viceCaptainDiscordId });
 
 
       const discordIds = newTeam.selectedPlayers.map(sp => sp.discordId);
@@ -547,25 +547,25 @@ export function TeamManager() {
       }
 
       if (previousCaptain && previousCaptain.member?.discordId) {
-        await axios.post("https://testing-bot-rt1b.onrender.com/assign-captain-role", {
+        await axios.post(`${import.meta.env.VITE_BOT_URL}/assign-captain-role`, {
           action: "remove",
           discordId: previousCaptain.member.discordId
         });
       }
 
       if (previousViceCaptain && previousViceCaptain.member?.discordId) {
-        await axios.post("https://testing-bot-rt1b.onrender.com/assign-vice-captain-role", {
+        await axios.post(`${import.meta.env.VITE_BOT_URL}/assign-vice-captain-role`, {
           action: "remove",
           discordId: previousViceCaptain.member.discordId
         });
       }
 
-      await axios.post("https://testing-bot-rt1b.onrender.com/assign-captain-role", {
+      await axios.post(`${import.meta.env.VITE_BOT_URL}/assign-captain-role`, {
         action: "add",
         discordId: newCaptainPlayer.member?.discordId
       });
 
-      await axios.post("https://testing-bot-rt1b.onrender.com/assign-vice-captain-role", {
+      await axios.post(`${import.meta.env.VITE_BOT_URL}/assign-vice-captain-role`, {
         action: "add",
         discordId: newViceCaptainPlayer.member?.discordId
       });
@@ -681,7 +681,7 @@ export function TeamManager() {
       setIsDeleting(true);
 
       const roleRemovalPromises = teamToDelete.players.map(player =>
-        axios.post("https://testing-bot-rt1b.onrender.com/assign-player-role", {
+        axios.post(`${import.meta.env.VITE_BOT_URL}/assign-player-role`, {
           action: "remove",
           discordId: player.member?.discordId
         })
@@ -689,7 +689,7 @@ export function TeamManager() {
 
       if (teamToDelete.captain?.member?.discordId) {
         roleRemovalPromises.push(
-          axios.post("https://testing-bot-rt1b.onrender.com/assign-captain-role", {
+          axios.post(`${import.meta.env.VITE_BOT_URL}/assign-captain-role`, {
             action: "remove",
             discordId: teamToDelete.captain.member.discordId
           })
@@ -698,7 +698,7 @@ export function TeamManager() {
 
       if (teamToDelete.viceCaptain?.member?.discordId) {
         roleRemovalPromises.push(
-          axios.post("https://testing-bot-rt1b.onrender.com/assign-vice-captain-role", {
+          axios.post(`${import.meta.env.VITE_BOT_URL}/assign-vice-captain-role`, {
             action: "remove",
             discordId: teamToDelete.viceCaptain.member.discordId
           })
