@@ -188,10 +188,11 @@ export function TeamManager() {
 
   const availablePlayers = players.filter(player => {
     const isOnCooldown = player.releaseDate &&
-      (Date.now() - new Date(player.releaseDate).getTime() < 3 * 24 * 60 * 60 * 1000);
+      (Date.now() - new Date(player.releaseDate).getTime() < 3 * 24 * 60 * 60 * 1000) && player.status !== 'available';
 
     const isInTeam = player.currentTeam || player.status === 'signed';
 
+    console.log(`Player ${player.discordName} - On Cooldown: ${isOnCooldown}, In Team: ${isInTeam}, Active: ${player.isActive}`);
     return !isOnCooldown && !isInTeam && player.isActive !== false;
   });
 
