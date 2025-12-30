@@ -1,15 +1,13 @@
-import { useState, useEffect } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Users, Trophy, Calendar, FileText, Settings, Menu, X, BarChart3 } from "lucide-react";
-import { TeamManager } from "./TeamManager";
-import { FixtureManager } from "./FixtureManager";
-import { StageManager } from "./StageManager";
-import { Header } from "./Header";
-import axios from "axios";
 import { BASE_URL } from "@/config";
+import axios from "axios";
+import { BarChart3, FileText, Menu, Settings, Users, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Header } from "./Header";
 import { PlayerManager } from "./PlayerManager";
+import { TeamManager } from "./TeamManager";
 import { TransactionLog } from "./TransactionLog";
 
 interface AdminDashboardProps {
@@ -43,17 +41,15 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
     // Fetch initial data
     const fetchData = async () => {
         try {
-            const [teamsRes, fixturesRes, stagesRes] = await Promise.all([
+            const [teamsRes] = await Promise.all([
                 axios.get(`${BASE_URL}/teams`),
-                axios.get(`${BASE_URL}/fixtures`),
-                axios.get(`${BASE_URL}/stages`)
             ]);
 
             // For TeamManager, we need team names array
             const teamNames = teamsRes.data.map((team: any) => team.name);
             setTeams(teamNames);
-            setFixtures(fixturesRes.data);
-            setStages(stagesRes.data);
+            // setFixtures(fixturesRes.data);
+            // setStages(stagesRes.data);
         } catch (error) {
             console.log("Error fetching data:", error);
         } finally {
@@ -97,8 +93,8 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
     const navigationItems = [
         { id: 'teams' as ActiveSection, label: 'Teams', icon: Users, color: 'text-blue-600', fullLabel: 'Team Management' },
         { id: 'players' as ActiveSection, label: 'Players', icon: Users, color: 'text-green-600', fullLabel: 'Player Management' },
-        { id: 'fixtures' as ActiveSection, label: 'Fixtures', icon: Calendar, color: 'text-purple-600', fullLabel: 'Fixture Management' },
-        { id: 'stages' as ActiveSection, label: 'Stages', icon: Trophy, color: 'text-yellow-600', fullLabel: 'Stage Management' },
+        // { id: 'fixtures' as ActiveSection, label: 'Fixtures', icon: Calendar, color: 'text-purple-600', fullLabel: 'Fixture Management' },
+        // { id: 'stages' as ActiveSection, label: 'Stages', icon: Trophy, color: 'text-yellow-600', fullLabel: 'Stage Management' },
         { id: 'transactions' as ActiveSection, label: 'Transactions', icon: FileText, color: 'text-gray-600', fullLabel: 'Transaction Log' },
     ];
 
@@ -118,10 +114,10 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 return <TeamManager />;
             case 'players':
                 return <PlayerManager />;
-            case 'fixtures':
-                return <FixtureManager teams={teams} stages={stages} getFixtures={getFixtures} fixtures={fixtures} />;
-            case 'stages':
-                return <StageManager stages={stages} getStages={getStages} getFixtures={getFixtures} />;
+            // case 'fixtures':
+            //     return <FixtureManager teams={teams} stages={stages} getFixtures={getFixtures} fixtures={fixtures} />;
+            // case 'stages':
+            //     return <StageManager stages={stages} getStages={getStages} getFixtures={getFixtures} />;
             case 'transactions':
                 return <TransactionLog />;
             default:
@@ -164,10 +160,10 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                             <Users className="h-3 w-3" />
                             <span>{teams.length}</span>
                         </div>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        {/* <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <Calendar className="h-3 w-3" />
                             <span>{fixtures.length}</span>
-                        </div>
+                        </div> */}
                     </div>
                 </div>
             </div>
@@ -246,7 +242,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                                         {teams.length}
                                     </Badge>
                                 </div>
-                                <div className="flex justify-between items-center">
+                                {/* <div className="flex justify-between items-center">
                                     <div className="flex items-center gap-2 text-sm">
                                         <Calendar className="h-3 w-3 text-purple-600" />
                                         <span>Total Fixtures</span>
@@ -263,7 +259,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                                     <Badge variant="outline" className="font-mono">
                                         {stages.length}
                                     </Badge>
-                                </div>
+                                </div> */}
                             </CardContent>
                         </Card>
 
