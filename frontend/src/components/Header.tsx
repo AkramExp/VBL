@@ -23,9 +23,9 @@ export function Header({
 
     // Navigation items for regular users
     const navItems = [
-        { path: "/", label: "Home" },
-        { path: "/fixtures", label: "Fixtures" },
-        { path: "/rankings", label: "Rankings" },
+        // { path: "/", label: "Home" },
+        // { path: "/fixtures", label: "Fixtures" },
+        // { path: "/rankings", label: "Rankings" },
         { path: "/rosters", label: "Rosters" },
         { path: "/transactions", label: "Transactions" },
         { path: '/cooldowns', label: 'Cooldowns' }

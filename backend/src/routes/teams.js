@@ -10,5 +10,6 @@ router.put("/:teamId/leadership", teamController.teamLeadership);
 router.post('/:id/players', teamController.addPlayerToTeam);
 router.put("/:teamId/password", teamController.updateTeamPassword);
 router.delete('/:teamId/players/:playerId', teamController.releasePlayerFromTeam);
+router.delete("/:teamId", teamController.deleteTeam);
 
 module.exports = router;

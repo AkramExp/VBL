@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Trophy, Users, FileText, Clock, Calendar, ArrowRight, Volleyball, Star, TrendingUp, Shield, Award } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { BASE_URL } from "@/config";
 import { EnhancedHeader } from "@/components/EnhancedHeader";
@@ -64,6 +64,12 @@ export function HomePage() {
         activeMatches: 0,
         completedMatches: 0
     });
+    const navigate = useNavigate();
+
+
+    useEffect(() => {
+        navigate("/rosters")
+    })
 
     useEffect(() => {
         const fetchHomeData = async () => {

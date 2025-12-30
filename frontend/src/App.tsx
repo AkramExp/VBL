@@ -24,8 +24,8 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/admin" element={<AdminIndex />} />
-          <Route path="/rankings" element={<TeamRankings />} />
-          <Route path="/rosters" element={<TeamRosters />} />
+          {/* <Route path="/rankings" element={<TeamRankings />} /> */}
+          <Route index path="/rosters" element={<TeamRosters />} />
           <Route path="/transactions" element={<Transactions />} />
           <Route path="/team/:id/manage" element={<TeamManagement />} />
           <Route path="/team/:id/view" element={<TeamDetails />} />

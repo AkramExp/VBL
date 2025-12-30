@@ -307,3 +307,44 @@ exports.loginTeam = async (req, res) => {
         res.status(500).json({ error: 'Failed to log in team', success: false });
     }
 }
+
+exports.deleteTeam = async (req, res) => {
+    try {
+        const { teamId } = req.params;
+
+        const team = await Team.findById(teamId);
+        if (!team) return res.status(404).json({ error: 'Team not found' });
+
+        const playerIds = (team.players || []).map(p => p.toString());
+
+        // Update players to be available and remove currentTeam
+        const playerUpdates = playerIds.map(pid =>
+            Player.findByIdAndUpdate(pid, {
+                status: 'available',
+                currentTeam: null,
+                releaseDate: new Date(),
+                cooldownEnds: null
+            })
+        );
+        await Promise.all(playerUpdates);
+
+        // Record transactions for releases
+        const txPromises = playerIds.map(pid =>
+            new Transaction({
+                type: 'release',
+                player: pid,
+                team: team._id,
+                details: `Team ${team.name} disbanded`
+            }).save()
+        );
+        await Promise.all(txPromises);
+
+        // Delete the team document to avoid validation errors from required fields
+        await Team.findByIdAndDelete(teamId);
+
+        res.json({ message: 'Team deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting team:', error);
+        res.status(500).json({ error: 'Failed to delete team' });
+    }
+}
